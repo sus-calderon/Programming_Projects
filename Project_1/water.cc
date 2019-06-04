@@ -14,14 +14,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    Molecule h2o;
-
-    h2o.natom = 3;
-    h2o.charge = 0;
-    h2o.zvals = new int[h2o.natom];
-    h2o.geom = new double* [h2o.natom];
-    for(int i=0; i < h2o.natom; i++)
-        h2o.geom[i] = new double [3];
+    Molecule h2o(3,0);  //So I can now input natoms and charge as natoms=3 and q=0
 
     h2o.zvals[0] = 8;
     h2o.geom[0][0] =  0.000000000000;
@@ -39,11 +32,6 @@ int main(int argc, char *argv[])
     h2o.print_geom();
     h2o.translate(5, 0, 0);
     h2o.print_geom();
-
-    delete[] h2o.zvals;
-    for(int i=0; i < h2o.natom; i++)
-        delete[] h2o.geom[i];
-    delete[] h2o.geom;
 
     return 0;
 }
