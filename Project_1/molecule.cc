@@ -19,7 +19,16 @@ void Molecule::translate(double x, double y, double z)
     }
 }
 
-Molecule::Molecule(){ }
+//The contructor and descructor do the work of allocating and deleting memory.
+Molecule::Molecule(int n, int q)
+{
+    natom = n;
+    charge = q;
+    zvals = new int[natom];
+    geom = new double* [natom];
+    for(int i=0; i<natom; i++)
+        geom[i] = new double[3];
+}
 Molecule::~Molecule()
 {
     delete[] zvals;
