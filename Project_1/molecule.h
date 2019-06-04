@@ -20,7 +20,7 @@ class Molecule
         double angle(int atom1, int atom2, int atom3);
         double torsion(int atom1, int atom2, int atom3, int atom4);
 
-        Molecule(int n, int q);
+        Molecule(const char *filename, int q);
         ~Molecule();
 };
 
