@@ -14,7 +14,7 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    Molecule h20;
+    Molecule h2o;
 
     h2o.natom = 3;
     h2o.charge = 0;
