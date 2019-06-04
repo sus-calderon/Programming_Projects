@@ -8,7 +8,7 @@ class Molecule
         //I'm declaring variables that can be used now
         int natom;
         int charge;
-        int *Zval;
+        int *zvals;
         double **geom;
         string point_group;
         //I'm declaring fucntions I want to use
