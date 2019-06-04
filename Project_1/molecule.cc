@@ -20,4 +20,10 @@ void Molecule::translate(double x, double y, double z)
 }
 
 Molecule::Molecule(){ }
-Molecule::~Molecule(){ }
+Molecule::~Molecule()
+{
+    delete[] zvals;
+    for(int i=0; i<natom; i++)
+        delete[] geom[i];
+    delete[] geom;
+}
