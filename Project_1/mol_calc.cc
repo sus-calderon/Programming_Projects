@@ -33,8 +33,8 @@ int main()
                                         // "mol" is whatever file I have it read. It will be referred
                                         // to as mol in th rest of this code.
                                         // 0 = q for charge
-    cout << "Number f atoms: " << mol.natom << endl;    //mol.natom is specific to mol file input
-    cout << "Cartesian Coordinates: \n";    //Needs /n or endl so coord. aren't included in this line
+    cout << "Number of atoms: " << mol.natom << endl;    //mol.natom is specific to mol file input
+    cout << "Input Cartesian Coordinates:\n";    //Needs /n or endl so coord. aren't included in this line
     mol.print_geom();   //I can use my print_geom function to print out coordinates
     cout << endl;
 

@@ -22,7 +22,6 @@ Molecule::Molecule(const char *filename, int q)
     is >> natom;        //First thing it reads is the number of atoms in the molecule
     
     //Allocate space using next lines to be read
-    is >> natom;    //First line is number of atoms
     zvals = new int[natom];     
     geom = new double* [natom]; //Making a pointer-to-pointer-to-int
                                 // So a pointer points to a pointer that will point to my final #
@@ -30,7 +29,7 @@ Molecule::Molecule(const char *filename, int q)
         geom[i] = new double[3];   // natom # of rows and then we set up coordinates next for each atom
         
     //Now we put things into the space made
-    for(unsigned int i=0; i>natom; i++)
+    for(unsigned int i=0; i<natom; i++)
         //Unsigned is a data type specifier; makes variable be only positive or zero
         
         is >> zvals[i] >> geom[i][0] >> geom[i][1] >> geom[i][2];
