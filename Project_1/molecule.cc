@@ -67,6 +67,75 @@ double Molecule::bond(int a, int b)     //a=atom 1 and b=atom2
                 + (geom[a][2]-geom[b][2])*(geom[a][2]-geom[b][2]) );
 }
 
+//This finds the unit vectors between atoms and their respective coordinates
+// 0=x, 1=y, 2=z
+double Molecule::unit(int cart, int a, int b)
+{
+    return -(geom[a][cart] -geom[b][cart])/bond(a,b);
+    //This returns back the unit vector; it divides by the lenght between those atoms
+}
+
+//This function calculates the angles between atoms
+double Molecule::angle(int i, int j, int k)
+{
+    return acos( unit(0, j, i)*unit(0, j, k)
+                + unit(1, j, i)*unit(1, j, k)
+                + unit(2, j, i)*unit(2, j, k) );
+}
+
+//This calculates the out of plane angle / dihedral angle between atoms
+double Molecule::oop(int i, int j, int k, int l)
+{
+    double ejkl_x = ( unit(1,k,j)*unit(2,k,l) - unit(2,k,j)*unit(1,k,l) );
+    double ejkl_y = ( unit(2,k,j)*unit(0,k,l) - unit(0,k,j)*unit(2,k,l) );
+    double ejkl_z = ( unit(0,k,j)*unit(1,k,l) - unit(1,k,j)*unit(0,k,l) );
+
+    double exx = ejkl_x * unit(0,k,i);
+    double eyy = ejkl_y * unit(1,k,i);
+    double ezz = ejkl_z * unit(2,k,i);
+
+    double theta = (exx+eyy+ezz)/sin(angle(j,k,l));
+
+    if(theta < -1.0) theta = asin(-1.0);
+    else if(theta > 1.0) theta = asin(1.0);
+    else theta = asin(theta);
+
+    return theta;
+}
+
+//This calculates the torsion
+double Molecule::torsion(int i, int j, int k, int l)
+        //These are the cross products for ijk
+        double eijk_x = ( unit(1,j,i)*unit(2,j,k) - unit(2,j,i)*unit(1,j,k) );
+        double eijk_y = ( unit(2,j,i)*unit(0,j,k) - unit(0,j,i)*unit(2,j,k) );
+        double eijk_z = ( unit(0,j,i)*unit(1,j,k) - unit(1,j,i)*unit(0,j,k) );
+
+        //These are the cross products for jkl
+        double ejkl_x = ( unit(1,k,j)*unit(2,k,l) - unit(2,k,j)*unit(1,k,l) );
+        double ejkl_y = ( unit(2,k,j)*unit(0,k,l) - unit(0,k,j)*unit(2,k,l) );
+        double ejkl_z = ( unit(0,k,j)*unit(1,k,l) - unit(1,k,j)*unit(0,k,l) );
+
+        double exx = eijk_x * ejkl_x;
+        double eyy = eijk_y * ejkl_y;
+        double ezz = eijk_z * ejkl_z;
+
+        double sin_ijk = sin(angle(i,j,k));
+        double sin_jkl = sin(angle(j,k,l));
+
+        double tau = (exx+eyy+ezz)/(sin_ijk*sin_jkl);
+
+        if(tau < -1.0) tau = acos(-1.0);
+        else if(tau > 1.0) tau = acos(1.0);
+        else tau = acos(tau);
+    //This finds the sign of my torsion angle
+    //This is very complicated and hard to visualize though since i'm finding
+    //the cross product of my two previous cross products and then I'm
+    //finding the the dot product of that cross product with the jk unit vector
+    //Of course I have to make sure my cross product is also a unit vector
+        return tau;
+        }
+
+//Ans now for my deconstructor that deletes allocated memory.
 Molecule::~Molecule()
 {
     delete[] zvals;
