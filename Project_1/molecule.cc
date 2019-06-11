@@ -105,6 +105,7 @@ double Molecule::oop(int i, int j, int k, int l)
 
 //This calculates the torsion
 double Molecule::torsion(int i, int j, int k, int l)
+{
         //These are the cross products for ijk
         double eijk_x = ( unit(1,j,i)*unit(2,j,k) - unit(2,j,i)*unit(1,j,k) );
         double eijk_y = ( unit(2,j,i)*unit(0,j,k) - unit(0,j,i)*unit(2,j,k) );
@@ -133,7 +134,7 @@ double Molecule::torsion(int i, int j, int k, int l)
     //finding the the dot product of that cross product with the jk unit vector
     //Of course I have to make sure my cross product is also a unit vector
         return tau;
-        }
+}
 
 //Ans now for my deconstructor that deletes allocated memory.
 Molecule::~Molecule()

@@ -19,8 +19,8 @@ class Molecule      //So the name of our class will be Molecule
         void print_geom();
         void rotate(double phi);
         void translate(double x, double y, double z);
-        double bond(int a, int b);
-        double angle(int i, int j, int k);
+        double bond(int atom1, int atom2);
+        double angle(int atom1, int atom2, int atom3);
         double torsion(int atom1, int atom2, int atom3, int atom4);
         double unit(int cart, int atom1, int atom2);
         double oop(int atom1, int atom2, int atom3, int atom4);
