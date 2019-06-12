@@ -104,39 +104,81 @@ double Molecule::oop(int i, int j, int k, int l)
 }
 
 //This calculates the torsion
-double Molecule::torsion(int i, int j, int k, int l)
+//Computes the angle between planes a-b-c and b-c-d
+// Computes the angle between planes a-b-c and b-c-d
+double Molecule::torsion(int a, int b, int c, int d)
 {
-        //These are the cross products for ijk
-        double eijk_x = ( unit(1,j,i)*unit(2,j,k) - unit(2,j,i)*unit(1,j,k) );
-        double eijk_y = ( unit(2,j,i)*unit(0,j,k) - unit(0,j,i)*unit(2,j,k) );
-        double eijk_z = ( unit(0,j,i)*unit(1,j,k) - unit(1,j,i)*unit(0,j,k) );
+  double eabc_x = (unit(1,b,a)*unit(2,b,c) - unit(2,b,a)*unit(1,b,c));
+  double eabc_y = (unit(2,b,a)*unit(0,b,c) - unit(0,b,a)*unit(2,b,c));
+  double eabc_z = (unit(0,b,a)*unit(1,b,c) - unit(1,b,a)*unit(0,b,c));
 
-        //These are the cross products for jkl
-        double ejkl_x = ( unit(1,k,j)*unit(2,k,l) - unit(2,k,j)*unit(1,k,l) );
-        double ejkl_y = ( unit(2,k,j)*unit(0,k,l) - unit(0,k,j)*unit(2,k,l) );
-        double ejkl_z = ( unit(0,k,j)*unit(1,k,l) - unit(1,k,j)*unit(0,k,l) );
+  double ebcd_x = (unit(1,c,b)*unit(2,c,d) - unit(2,c,b)*unit(1,c,d));
+  double ebcd_y = (unit(2,c,b)*unit(0,c,d) - unit(0,c,b)*unit(2,c,d));
+  double ebcd_z = (unit(0,c,b)*unit(1,c,d) - unit(1,c,b)*unit(0,c,d));
 
-        double exx = eijk_x * ejkl_x;
-        double eyy = eijk_y * ejkl_y;
-        double ezz = eijk_z * ejkl_z;
+  double exx = eabc_x * ebcd_x;
+  double eyy = eabc_y * ebcd_y;
+  double ezz = eabc_z * ebcd_z;
 
-        double sin_ijk = sin(angle(i,j,k));
-        double sin_jkl = sin(angle(j,k,l));
+  double tau = (exx + eyy + ezz)/(sin(angle(a,b,c)) * sin(angle(b,c,d)));
 
-        double tau = (exx+eyy+ezz)/(sin_ijk*sin_jkl);
+  if(tau < -1.0) tau = acos(-1.0);
+  else if(tau > 1.0) tau = acos(1.0);
+  else tau = acos(tau);
 
-        if(tau < -1.0) tau = acos(-1.0);
-        else if(tau > 1.0) tau = acos(1.0);
-        else tau = acos(tau);
-    //This finds the sign of my torsion angle
-    //This is very complicated and hard to visualize though since i'm finding
-    //the cross product of my two previous cross products and then I'm
-    //finding the the dot product of that cross product with the jk unit vector
-    //Of course I have to make sure my cross product is also a unit vector
-        return tau;
+  // Compute the sign of the torsion 
+  double cross_x = eabc_y * ebcd_z - eabc_z * ebcd_y;
+  double cross_y = eabc_z * ebcd_x - eabc_x * ebcd_z;
+  double cross_z = eabc_x * ebcd_y - eabc_y * ebcd_x;
+  double norm = cross_x*cross_x + cross_y*cross_y + cross_z*cross_z;
+  cross_x /= norm;
+  cross_y /= norm;
+  cross_z /= norm;
+  double sign = 1.0;
+  double dot = cross_x*unit(0,b,c)+cross_y*unit(1,b,c)+cross_z*unit(2,b,c);
+  if(dot < 0.0) sign = -1.0;
+
+  return tau*sign;
 }
 
-//Ans now for my deconstructor that deletes allocated memory.
+//double Molecule::torsion(int i, int j, int k, int l)
+//{
+//    //These are the cross products for ijk
+//    double eijk_x = ( unit(1,j,i)*unit(2,j,k) - unit(2,j,i)*unit(1,j,k) );
+//    double eijk_y = ( unit(2,j,i)*unit(0,j,k) - unit(0,j,i)*unit(2,j,k) );
+//    double eijk_z = ( unit(0,j,i)*unit(1,j,k) - unit(1,j,i)*unit(0,j,k) );
+
+//    //These are the cross products for jkl
+//    double ejkl_x = ( unit(1,k,j)*unit(2,k,l) - unit(2,k,j)*unit(1,k,l) );
+//    double ejkl_y = ( unit(2,k,j)*unit(0,k,l) - unit(0,k,j)*unit(2,k,l) );
+//    double ejkl_z = ( unit(0,k,j)*unit(1,k,l) - unit(1,k,j)*unit(0,k,l) );
+
+//    double exx = eijk_x * ejkl_x;
+//    double eyy = eijk_y * ejkl_y;
+//    double ezz = eijk_z * ejkl_z;
+
+//    double tau = (exx+eyy+ezz)/(sin(angle(i,j,k)) * sin(angle(j,k,l)));
+
+//    if(tau < -1.0) tau=acos(-1.0);
+//    else if(tau > 1.0) tau=acos(1.0);
+//    else tau=acos(tau);
+
+//    //This finds the sign of my torsion angle
+//    double cross_x = eijk_y * ejkl_z - eijk_z * ejkl_y;
+//    double cross_y = eijk_z * ejkl_x - eijk_x * ejkl_z;
+//    double cross_z = eijk_x * ejkl_y - eijk_y * ejkl_x;
+//    double norm = cross_x*cross_x + cross_y*cross_y + cross_z*cross_z;
+//    cross_x /= norm;
+//    cross_y /= norm;
+//    cross_z /= norm;
+//    double sign = 1.0;
+//    double dot = cross_x*unit(0,j,k)+cross_y*unit(1,j,k)+cross_z*unit(2,j,k);
+//    if(dot < 0.0) sign = -1.0;
+
+//    return tau*sign;
+//}
+
+//And now for my deconstructor that deletes allocated memory.
 Molecule::~Molecule()
 {
     delete[] zvals;

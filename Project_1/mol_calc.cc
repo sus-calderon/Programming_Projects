@@ -97,9 +97,7 @@ int main()
                 for(int l=0; l<k; l++)
                 {
                     if( mol.bond(i,j)<4.0 && mol.bond(j,k)<4.0 && mol.bond(k,l)<4.0 )
-                    {
-                        printf("%2d- %2d- %2d- %2d %10.6f \n", i, j, k, l, mol.torsion(i,j,k,l)*(180.0/acos(1.0)));
-                    }
+                        printf("%2d- %2d- %2d- %2d %10.6f \n", i, j, k, l, mol.torsion(i,j,k,l)*(180.0/acos(-1.0)));
                 }
             }
         }
