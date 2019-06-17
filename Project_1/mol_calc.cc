@@ -11,11 +11,14 @@
 #include <cmath>
 #include "molecule.h"
 #include "masses.h"
-//#include "Eigen/Dense"
-//#include "Eigen/Eigenvalues"
-//#include "Eigen/Core"
-//
-//typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::RowMajor> Matrix;
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
+#include "Eigen/Core"
+
+typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
+// A question I need to ask later is why did I have to include Eigen::Dynamic twice?
+// Like why did it affect the order of my arrays and vectors, that was weird
+//typedef Eigen::Matrix<double, Eigen::Dynamic, 1> Vector;
 
 using namespace std;
 
@@ -128,14 +131,97 @@ int main()
     xcm /= M;
     ycm /= M;
     zcm /= M;
-
     printf("Molecular Center of Mass: %12.8f %12.8f %12.8f \n", xcm, ycm, zcm);
     cout << endl;
+
     mol.translate(-xcm, -ycm, -zcm);    //This translate my molecular geom to its COM as the origin (not the one given in the file)
 
 
-    //For moment of Intertia, I want to find each element's momentf intertia tensor ( a 3x3 matrix)
+    //Principal Moments of Inertia
+    Matrix I(3,3);
+    for(int i=0; i<mol.natom; i++)
+    {
+        mi = masses[(int) mol.zvals[i]];
+        I(0,0) += mi*((mol.geom[i][1] * mol.geom[i][1]) + (mol.geom[i][2] * mol.geom[i][2]));
+        I(1,1) += mi*((mol.geom[i][0] * mol.geom[i][0]) + (mol.geom[i][2] * mol.geom[i][2]));
+        I(2,2) += mi*((mol.geom[i][0] * mol.geom[i][0]) + (mol.geom[i][1] * mol.geom[i][1]));
+        I(0,1) += mi*(mol.geom[i][0])*mol.geom[i][1];
+        I(0,2) += mi*(mol.geom[i][0])*mol.geom[i][2];
+        I(1,2) += mi*(mol.geom[i][1])*mol.geom[i][2];
+    }
 
+    I(1,0) = I(0,1);
+    I(2,0) = I(0,2);
+    I(2,1) = I(1,2);
+
+    cout << "\n Moment of Inertia Tensor (amu bohr^2): \n" << endl;
+    cout << I << endl;
+
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(I);
+    Matrix evecs = solver.eigenvectors();
+    Matrix evals = solver.eigenvalues();
+
+    cout << "\n Principal Moments of Inertia (amu * bohr^2); \n";
+    cout << evals << endl;
+
+    double conv = 0.529177249*0.529177249;
+    cout << "\n Principal Moments of Inertia (amu * Angstrom^2): \n";
+    cout << evals*conv << endl;
+
+    double a=1.0e-16;
+    double b=1.66054e-24;
+    double conv2 = a*b;
+    cout << "\n Principal Moments of Inertia (g * cm^2): \n";
+    cout << evals*conv*conv2 << endl;
+
+    
+
+//    //For moment of Intertia, I want to find each element's momentf intertia tensor ( a 3x3 matrix)
+//    Matrix I(3,3);  //Using the Eigen function I can make a matrix to store my inertia tensors in
+//    for(int i=0; i<mol.natom; i++) 
+//    {
+//        mi = masses[(int) mol.zvals[i]];
+//            I(0,0) += mi * (mol.geom[i][1]*mol.geom[i][1] + mol.geom[i][2]*mol.geom[i][2]);
+//            I(1,1) += mi * (mol.geom[i][0]*mol.geom[i][0] + mol.geom[i][2]*mol.geom[i][2]);
+//            I(2,2) += mi * (mol.geom[i][0]*mol.geom[i][0] + mol.geom[i][1]*mol.geom[i][1]);
+//            I(0,1) += mi * mol.geom[i][0]*mol.geom[i][1];
+//            I(0,2) += mi * mol.geom[i][0]*mol.geom[i][2];
+//            I(1,2) += mi * mol.geom[i][1]*mol.geom[i][2];
+//    }
+    
+//    I(1,0) = I(0,1);
+//    I(2,0) = I(0,2);
+//    I(2,1) = I(1,2);
+
+//    cout << "\nMoment of inertia tensor (amu bohr^2):\n";
+//    cout << I << endl;
+
+//    // find the principal moments
+//    Eigen::SelfAdjointEigenSolver<Matrix> solver(I);
+//    Matrix evecs = solver.eigenvectors();
+//    Matrix evals = solver.eigenvalues();
+
+//    cout << "\nPrincipal moments of inertia (amu * bohr^2):\n";
+//    cout << evals << endl;
+
+//    double conv = 0.529177249 * 0.529177249;
+//    cout << "\nPrincipal moments of inertia (amu * AA^2):\n";
+//    cout << evals * conv << endl;
+
+//    conv = 1.6605402E-24 * 0.529177249E-8 * 0.529177249E-8;
+//    cout << "\nPrincipal moments of inertia (g * cm^2):\n";
+//    cout << evals * conv << endl;
+
+//    // classify the rotor
+//    if(mol.natom == 2) cout << "\nMolecule is diatomic.\n";
+//    else if(evals(0) < 1e-4) cout << "\nMolecule is linear.\n";
+//    else if((fabs(evals(0) - evals(1)) < 1e-4) && (fabs(evals(1) - evals(2)) < 1e-4))
+//        cout << "\nMolecule is a spherical top.\n";
+//    else if((fabs(evals(0) - evals(1)) < 1e-4) && (fabs(evals(1) - evals(2)) > 1e-4))
+//        cout << "\nMolecule is an oblate symmetric top.\n";
+//    else if((fabs(evals(0) - evals(1)) > 1e-4) && (fabs(evals(1) - evals(2)) < 1e-4))
+//        cout << "\nMolecule is a prolate symmetric top.\n";
+//    else cout << "\nMolecule is an asymmetric top.\n";
 
     return 0;
 }
