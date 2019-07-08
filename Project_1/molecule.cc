@@ -1,6 +1,7 @@
 //So this will be my .cc file that contains the definitions of my variables and functions
 //I define stuff here.
 //Rewritten June 7, 2019 by Susana Calderon
+// <molecule.cc>
 //
 #include "molecule.h"
 #include <iostream>

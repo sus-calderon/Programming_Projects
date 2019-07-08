@@ -12,7 +12,7 @@ class Molecule      //So the name of our class will be Molecule
                 // that makes use of an object called Molecule
         int natom;
         int charge;
-        int *zvals;     //zvals will be an array so it needs a pointer * (pointer to int)
+        double *zvals;     //zvals will be an array so it needs a pointer * (pointer to int)
         double **geom;  //geom is a pointer-to-pointer-to-int array
         string point_group;  //Need to define a string varable although I don't know why it doesn't light up
 
