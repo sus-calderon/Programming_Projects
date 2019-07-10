@@ -40,11 +40,16 @@ Hessian::Hessian(const char *filename)
     hessian.close();     //We then close input file when done.
 }
 
+//Ok so these are specific to water so I'll probably have to move it to my calculator or something
 //Now to print out my sqaure Hessian Matrix
 void Hessian::print_H()
 {
-    for(int i=0; i<natom*3; i++) 
-           printf("%20.12f %20.12f %20.12f %20.12f %20.12f %20.12f %20.12f %20.12f %20.12f\n", H[i][0], H[i][1], H[i][2], H[i][3], H[i][4], H[i][5], H[i][6], H[i][7], H[i][8]);
+    for(int i=0; i<natom*3; i++) {
+        for(int j=0; j<natom*3; j++) {
+            printf("%20.12f", H[i][j]);
+        }
+        printf("\n");
+    }    
 }
 
 //And now for my deconstructor that deletes allocated memory.
