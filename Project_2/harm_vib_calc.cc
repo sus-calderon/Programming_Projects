@@ -51,9 +51,9 @@ int main()
     for(int i=0; i<mol.natom; i++)
         m[i] = masses[(int) mol.zvals[i]];
 
-    cout << "Weight of atoms: \n";
+    cout << "Weight of atoms (amu): \n";
     for(int i=0; i<mol.natom; i++)
-        printf("%20.12f \n", m[i]);
+        printf("%14.12f \n", m[i]);
     cout << endl;
     
     for(int i=0; i<3*mol.natom; i++) {
@@ -62,8 +62,8 @@ int main()
         }
     }
     cout << "Mass Weighted Hessian Matrix: \n";
-    //hess.print_H();
-    //cout << endl;
+    hess.print_H();
+    cout << endl;
 
     //Diagonalize the Hessian using the Eigen package
     Matrix F(3*mol.natom, 3*mol.natom);
@@ -72,8 +72,8 @@ int main()
             F(i,j) = hess.H[i][j];
         }
     }
-    cout << F << endl;
-    cout << endl;
+    //cout << F << endl;
+    //cout << endl;
 
     //This will solve for the eigenvalues
     Eigen::SelfAdjointEigenSolver<Matrix> solver(F);
@@ -109,7 +109,7 @@ int main()
     
     cout << "Harmonic Vibrational Frequencies (cm^-1): \n";
     for(int i=0; i<size; i++)
-        printf("%20.12f \n", w[i]);
+        printf("%12.6f \n", w[i]);
     cout << endl;
 
     return 0;
