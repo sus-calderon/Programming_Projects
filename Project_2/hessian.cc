@@ -46,7 +46,7 @@ void Hessian::print_H()
 {
     for(int i=0; i<natom*3; i++) {
         for(int j=0; j<natom*3; j++) {
-            printf("%20.12f", H[i][j]);
+            printf("%14.6f", H[i][j]);
         }
         printf("\n");
     }    
