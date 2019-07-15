@@ -53,7 +53,7 @@ int main()
 
     cout << "Weight of atoms (amu): \n";
     for(int i=0; i<mol.natom; i++)
-        printf("%14.12f \n", m[i]);
+        printf("%14.6f \n", m[i]);
     cout << endl;
     
     for(int i=0; i<3*mol.natom; i++) {
