@@ -63,6 +63,7 @@ void HartreeFock::read_enuc(const char *filename)
     cout << endl;
     printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
     nucl.close();
+    return;
 }
 
 //Read in one electron integrals
@@ -80,12 +81,11 @@ void HartreeFock::read_oei(double** oei_mat, const char *filename)
     }
    
     oei.close(); //Close input file
-
     return;
 }
 
 
-//Print out integrals we've read in
+//Print out one electron integrals we've read in
 void HartreeFock::print_matrix(std::string mat_string, double** matrix)
 {
     cout << endl;
@@ -97,6 +97,7 @@ void HartreeFock::print_matrix(std::string mat_string, double** matrix)
         printf("\n");
     }
     cout << endl;
+    return;
 }
 
 
