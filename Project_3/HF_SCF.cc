@@ -15,18 +15,12 @@ using namespace std;
 
 int main()
 {
-    //Read in enuc.dat file
-    double enuc;
-    ifstream nucl;
-    nucl.open("enuc.dat");
-    assert(nucl.good());
-    nucl >> enuc;
-    cout << "Nuclear Repulsion Energy: " << enuc << endl;
-    cout << endl;
-
     HartreeFock hf("s.dat");
 
-    //Read and print input integrals
+    //Read and print nuclear repulsion energy
+    hf.read_enuc("enuc.dat");
+
+    //Read and print input one electron integrals
     hf.read_oei(hf.S, "s.dat");
     hf.print_matrix("Overlap Integral Matrix (s): \n", hf.S);
 
@@ -38,6 +32,8 @@ int main()
 
     hf.build_core(hf.T, hf.V);
     hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
+
+    //Read and print two electron integral
 
     return 0;
 }
