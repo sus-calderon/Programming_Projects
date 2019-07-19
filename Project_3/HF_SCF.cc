@@ -24,24 +24,20 @@ int main()
     cout << "Nuclear Repulsion Energy: " << enuc << endl;
     cout << endl;
 
-    //Read input integrals
-    HartreeFock s("s.dat");
-    cout << endl;
-    cout << "Overlap Integral Matrix (s): \n";
-    s.print_matrix();
-    cout << endl;
+    HartreeFock hf("s.dat");
 
-    HartreeFock v("v.dat");
-    cout << endl;
-    cout << "Nuclear Attraction Integral Matrix (v): \n";
-    v.print_matrix();
-    cout << endl;
+    //Read and print input integrals
+    hf.read_oei(hf.S, "s.dat");
+    hf.print_matrix("Overlap Integral Matrix (s): \n", hf.S);
 
-    HartreeFock t("t.dat");
-    cout << endl;
-    cout << "Kinetic Energy Integral Matrix (t): \n";
-    t.print_matrix();
-    cout << endl;
+    hf.read_oei(hf.T, "t.dat");
+    hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
+
+    hf.read_oei(hf.V, "v.dat");
+    hf.print_matrix("Potential Energy Integral Matrix (v): \n", hf.V);
+
+    hf.build_core(hf.T, hf.V);
+    hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
 
     return 0;
 }
