@@ -32,19 +32,37 @@ HartreeFock::HartreeFock(const char *filename)
     }
 
     //Now that we've accessed last line, we can grab first value and put it into natoms
-    is >> natom;
-    cout << "Number of atoms: " << natom << endl;
+    is >> norb;
+    cout << "Number of atomic orbitals: " << norb << endl;
 
     //Now that I have natoms, I can create an natom X natom matrix
-    S = new double* [natom];    //p2p2i
-    for(int i=0; i<natom; i++)
-        S[i] = new double[natom];   //We started with natom rows and now each row will have natom columns
+    S = new double* [norb];
+    for(int i=0; i<norb; i++)
+        S[i] = new double[norb];
 
+    T = new double* [norb];
+    for(int i=0; i<norb; i++)
+        T[i] = new double[norb];
+
+    V = new double* [norb];
+    for(int i=0; i<norb; i++)
+        V[i] = new double[norb];
+
+    core = new double* [norb];
+    for(int i=0; i<norb; i++)
+        core[i] = new double[norb];
+    is.close(); //Close input file
+}
+
+void HartreeFock::read_oei(double** oei_mat, const char *filename)
+{
+    //Open File here
+    std::ifstream is(filename);
+    assert(is.good());
+   
     //Instead of doing a loop, I'm going to try to use the first two values in the line for my matrix
     //Now put values into space made
     //My file is like 28 lines so I need to loop 28 times to read each line
-    is.clear();
-    is.seekg(0, ios::beg);   // B/c I was at end of file, I need to clear flags I was at end, so I can 
     int lines=0;
     std::string line;
     while (getline(is, line)) {
@@ -58,30 +76,64 @@ HartreeFock::HartreeFock(const char *filename)
     int m;
     int n;
     while( start<=lines ) {
-        is >> m >> n >> S[m-1][n-1];
+        is >> m >> n >> oei_mat[m-1][n-1];
+        oei_mat[n-1][m-1] = oei_mat[m-1][n-1];
         start++;
     }
 
     is.close(); //Close input file
+
+    return;
 }
 
+
 //Print out integrals we've read in
-void HartreeFock::print_matrix()
+void HartreeFock::print_matrix(std::string mat_string, double** matrix)
 {
-    for(int i=0; i<natom; i++) {
-        for(int j=0; j<natom; j++) {
-            printf("%14.6f", S[i][j]);
+    cout << endl;
+    cout << mat_string;
+    for(int i=0; i<norb; i++) {
+        for(int j=0; j<norb; j++) {
+            printf("%14.6f", matrix[i][j]);
         }
         printf("\n");
     }
+    cout << endl;
 }
+
+
+// Build Core Function
+void HartreeFock::build_core(double** t_mat, double** v_mat)
+{
+    for(int i=0; i<norb; i++) {
+        for(int j=0; j<norb; j++) {
+            core[i][j] = t_mat[i][j] + v_mat[i][j];
+        }
+    }
+
+    return;
+}
+
+
 
 //Delete allocated and used memory
 HartreeFock::~HartreeFock()
 {
-    for(int i=0; i<natom; i++)
+    for(int i=0; i<norb; i++)
         delete[] S[i];
     delete[] S;
+
+    for(int i=0; i<norb; i++)
+        delete[] T[i];
+    delete[] T;
+
+    for(int i=0; i<norb; i++)
+        delete[] V[i];
+    delete[] V;
+
+    for(int i=0; i<norb; i++)
+        delete[] core[i];
+    delete[] core;
 }
 
 
