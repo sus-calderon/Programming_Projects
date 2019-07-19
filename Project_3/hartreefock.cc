@@ -54,34 +54,32 @@ HartreeFock::HartreeFock(const char *filename)
     is.close(); //Close input file
 }
 
+//Read in and print out nuclear repulsion energy
+void HartreeFock::read_enuc(const char *filename)
+{
+    std::ifstream nucl(filename);
+    assert(nucl.good());
+    nucl >> enuc;
+    cout << endl;
+    printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
+    nucl.close();
+}
+
+//Read in one electron integrals
 void HartreeFock::read_oei(double** oei_mat, const char *filename)
 {
     //Open File here
-    std::ifstream is(filename);
-    assert(is.good());
-   
-    //Instead of doing a loop, I'm going to try to use the first two values in the line for my matrix
-    //Now put values into space made
-    //My file is like 28 lines so I need to loop 28 times to read each line
-    int lines=0;
-    std::string line;
-    while (getline(is, line)) {
-       lines++;
-    }
-    //So it does read in 28 lines for s.dat
+    std::ifstream oei(filename);
+    assert(oei.good());
 
-    is.clear();
-    is.seekg(0, ios::beg);
-    int start=1;
+    //Read in data
     int m;
     int n;
-    while( start<=lines ) {
-        is >> m >> n >> oei_mat[m-1][n-1];
+    while( oei >> m >> n >> oei_mat[m-1][n-1] ) {
         oei_mat[n-1][m-1] = oei_mat[m-1][n-1];
-        start++;
     }
-
-    is.close(); //Close input file
+   
+    oei.close(); //Close input file
 
     return;
 }
@@ -94,7 +92,7 @@ void HartreeFock::print_matrix(std::string mat_string, double** matrix)
     cout << mat_string;
     for(int i=0; i<norb; i++) {
         for(int j=0; j<norb; j++) {
-            printf("%14.6f", matrix[i][j]);
+            printf("%13.7f", matrix[i][j]);
         }
         printf("\n");
     }
