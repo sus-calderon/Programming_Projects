@@ -20,7 +20,7 @@ int main()
     //Read and print nuclear repulsion energy
     hf.read_enuc("enuc.dat");
 
-    //Read and print input one electron integrals
+    //Read and print one electron integrals
     hf.read_oei(hf.S, "s.dat");
     hf.print_matrix("Overlap Integral Matrix (s): \n", hf.S);
 
@@ -34,6 +34,10 @@ int main()
     hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
 
     //Read and print two electron integral
+    hf.read_tei(hf.R, "eri.dat");
+
+    //Build Orthogonalization MAtrix
+    //hf.build_orthog(hf.S);
 
     return 0;
 }
