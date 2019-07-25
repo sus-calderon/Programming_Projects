@@ -35,7 +35,8 @@ HartreeFock::HartreeFock(const char *filename)
     is >> norb;
     cout << "Number of atomic orbitals: " << norb << endl;
 
-    //Now that I have natoms, I can create an natom X natom matrix
+    //Now that I have norbs, I can create an norb X norb matrix
+    //One electron integrals
     S = new double* [norb];
     for(int i=0; i<norb; i++)
         S[i] = new double[norb];
@@ -51,6 +52,13 @@ HartreeFock::HartreeFock(const char *filename)
     core = new double* [norb];
     for(int i=0; i<norb; i++)
         core[i] = new double[norb];
+
+    //Two electron integral
+    //A linear array of size N
+    int M = (norb*(norb+1))/2;      //Number of elements in matrix ixj
+    int N = (M*(M+1))/2;            //Number of elements in super matrix ijxkl
+    R = new double[N];            //So this will just be a linear array of size N to hold all elements of ijxkl
+
     is.close(); //Close input file
 }
 
@@ -114,6 +122,49 @@ void HartreeFock::build_core(double** t_mat, double** v_mat)
 }
 
 
+//Read in two-electron repulsion integral
+void HartreeFock::read_tei(double* tei_ary, const char *filename)
+{
+    //Open File here
+    std::ifstream tei(filename);
+    assert(tei.good());
+
+    //Read in file
+    int i, j, k, l, ij, kl, ijkl;
+    double tei_val;        //Just need something to hold the value read in
+    while( tei>> i >> j >> k >> l >> tei_val ) {
+
+        i-=1;
+        j-=1;
+        k-=1;
+        l-=1;
+        
+        if(i>j) ij = i*(i+1)/2 + j;
+        else ij = j*(j+1)/2 + i;
+
+        if(k>l) kl = k*(k+1)/2 + l;
+        else kl = l*(l+1)/2 + k;
+        
+        if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
+        else ijkl = (kl*(kl+1)/2)+ij;
+
+        R[ijkl] = tei_val;
+    }
+    tei.close(); //Close input file
+
+    return;
+}
+
+
+//Build the orthogonalization matrix
+void HartreeFock::build_orthog(double** s_mat)
+{
+    //We Diagonalize the overlap matrix S
+    //I can use the Eigen package to simplify what I write down in the code
+
+    return;
+}
+
 
 //Delete allocated and used memory
 HartreeFock::~HartreeFock()
@@ -133,6 +184,8 @@ HartreeFock::~HartreeFock()
     for(int i=0; i<norb; i++)
         delete[] core[i];
     delete[] core;
+
+    delete[] R;
 }
 
 
