@@ -10,6 +10,14 @@
 #include <cassert>
 #include <cmath>
 
+//Include Eigen package for easy diagonalization
+#include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
+#include "Eigen/Core"
+
+typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
+typedef Eigen::Matrix<double, Eigen::Dynamic, 1> Vector;
+
 
 //This will be to read in my integral. The enuc data will be it's own thing in the main program. (It's just one line and value.)
 HartreeFock::HartreeFock(const char *filename)
@@ -161,6 +169,32 @@ void HartreeFock::build_orthog(double** s_mat)
 {
     //We Diagonalize the overlap matrix S
     //I can use the Eigen package to simplify what I write down in the code
+    Matrix overlap(norb,norb);
+    for(int i=0; i<norb; i++) {
+        for(int j=0; j<norb; j++) {
+            overlap(i,j) = s_mat[i][j];
+        }
+    }
+
+    //To diagonalize we need to solve for eigenvectors and eigenvalues
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(overlap);
+    Matrix EVC = solver.eigenvectors();   //This is a matrix nxn
+    Matrix EVC_T = EVC.transpose();      //This will stay nxn
+    Matrix EVL = solver.eigenvalues();    //This is a vector nx1
+
+    //cout << endl;
+    //cout << "S = Ls * D * Ls^(T) = " << endl << EVC * EVL.asDiagonal() * EVC_T << endl;
+
+    //Take the squareroot of the eigenvalues
+    for(int i=0; i<EVL.size(); i++)
+        EVL(i) = sqrt(EVL(i));
+
+    //Make sure the eigenvalues are a Diagonal Matrix
+    Matrix EVL_D = EVL.asDiagonal();     //This should be nxn
+
+    //Ask Kirk about Precision Issue
+    cout << endl;
+    cout << "S^1/2 = Ls * D^1/2 * Ls^(T) = " << endl << EVC * EVL_D * EVC_T << endl;
 
     return;
 }
