@@ -36,8 +36,8 @@ int main()
     //Read and print two electron integral
     hf.read_tei(hf.R, "eri.dat");
 
-    //Build Orthogonalization MAtrix
-    //hf.build_orthog(hf.S);
+    //Build Orthogonalization Matrix
+    hf.build_orthog(hf.S);
 
     return 0;
 }
