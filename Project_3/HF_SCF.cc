@@ -21,23 +21,26 @@ int main()
     hf.read_enuc("enuc.dat");
 
     //Read and print one electron integrals
-    hf.read_oei(hf.S, "s.dat");
+    hf.S = hf.read_overlap(hf.S, "s.dat");
     hf.print_matrix("Overlap Integral Matrix (s): \n", hf.S);
 
-    hf.read_oei(hf.T, "t.dat");
+    hf.T = hf.read_kinetic(hf.T, "t.dat");
     hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
 
-    hf.read_oei(hf.V, "v.dat");
+    hf.V = hf.read_potential(hf.V, "v.dat");
     hf.print_matrix("Potential Energy Integral Matrix (v): \n", hf.V);
 
-    hf.build_core(hf.T, hf.V);
+    hf.core = hf.build_core(hf.T, hf.V);
     hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
 
     //Read and print two electron integral
-    hf.read_tei(hf.R, "eri.dat");
+    hf.read_tei(hf.TEI, "eri.dat");
 
     //Build Orthogonalization Matrix
     hf.build_orthog(hf.S);
+
+    //Build Initial Guess Density
+    //hf.build_fock_guess(?, hf.core);
 
     return 0;
 }
