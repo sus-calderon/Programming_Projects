@@ -193,23 +193,24 @@ Matrix HartreeFock::build_orthog(Matrix s_mat)
 {
     //To diagonalize we need to solve for eigenvectors and eigenvalues
     Eigen::SelfAdjointEigenSolver<Matrix> solver(s_mat);
-    Matrix EVC = solver.eigenvectors();     //This is a matrix nxn
-    Matrix EVC_T = EVC.transpose();         //This will stay nxn
-    Matrix EVL = solver.eigenvalues();      //This is a vector nx1
+    Matrix evc = solver.eigenvectors();     //This is a matrix nxn
+    Matrix evc_T = evc.transpose();         //This will stay nxn
+    Matrix evl = solver.eigenvalues();      //This is a vector nx1
 
     //Take one over the squareroot of the eigenvalues
-    for(int i=0; i<EVL.size(); i++)
-        EVL(i) = 1/(sqrt(EVL(i)));
+    for(int i=0; i<evl.size(); i++)
+        evl(i) = 1/(sqrt(evl(i)));
 
     //Make sure the eigenvalues are a Diagonal Matrix
-    Matrix EVL_D = EVL.asDiagonal();     //This should be nxn
-    SOM = EVC * EVL_D * EVC_T;
-    //cout << "S^1/2 = Ls * D^1/2 * Ls^(T) = " << endl << EVC * EVL_D * EVC_T << endl;
+    Matrix evl_D = evl.asDiagonal();     //This should be nxn
+    SOM = evc * evl_D * evc_T;
+
     return SOM;
 }
 
 
 //Build the Initial Guess Density
+//
 //First, form the Initial (guess) Fock Matrix
 Matrix HartreeFock::build_fock_guess(Matrix s_ortho, Matrix core_mat)
 {
@@ -218,7 +219,8 @@ Matrix HartreeFock::build_fock_guess(Matrix s_ortho, Matrix core_mat)
 
     return F_Guess;
 }
-//Second, Diagonalize the Fock Matrix
+
+//Second, Diagonalize the Fock Matrix and transform its e-vectors into the og AO basis
 Matrix HartreeFock::build_MO_coef(Matrix f_guess, Matrix SOM)
 {
     //Diagonalize the Fock matrix
@@ -231,7 +233,15 @@ Matrix HartreeFock::build_MO_coef(Matrix f_guess, Matrix SOM)
     
     return MO_coef;
 }
+
 //Third, build the Density Matrix using the occupied MOs
+Matrix HartreeFock::build_density(Matrix MO_coef)
+{
+    Matrix C_T = MO_coef.transpose();
+    D = MO_coef * C_T;
+
+    return D;
+}
 
 
 //Delete allocated and used memory
