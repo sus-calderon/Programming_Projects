@@ -48,12 +48,15 @@ HartreeFock::HartreeFock(const char *filename)
     T.resize(norb, norb);
     V.resize(norb, norb);
     core.resize(norb, norb);
+    SOM.resize(norb, norb);
 
-    //Two electron integral
-    //A linear array of size N
+    //Create linear array for Two electron integral
     int M = (norb*(norb+1))/2;      //Number of elements in matrix ixj
     int N = (M*(M+1))/2;            //Number of elements in super matrix ijxkl
-    TEI = new double[N];            //So this will just be a linear array of size N to hold all elements of ijxkl
+    TEI.resize(N);                  //So this will just be a linear array of size N to hold all elements of ijxkl
+
+    //Create Fock Matrix of same dimension as core and oei matrices
+    F_Guess.resize(norb,norb);
 
     is.close(); //Close input file
 }
@@ -72,7 +75,7 @@ void HartreeFock::read_enuc(const char *filename)
 }
 
 
-//Read in one electron integrals and store into respecitve matrices
+//Read in one electron integrals and store into respective matrices
 Matrix HartreeFock::read_overlap(Matrix oei_mat, const char *filename)
 {
     //Open File here
@@ -85,7 +88,6 @@ Matrix HartreeFock::read_overlap(Matrix oei_mat, const char *filename)
     while( oei >> m >> n >> oei_mat(m-1,n-1) ) {
         oei_mat(n-1,m-1) = oei_mat(m-1,n-1);
     }
-   
     oei.close(); //Close input file
     return oei_mat;
 }
@@ -149,13 +151,12 @@ Matrix HartreeFock::build_core(Matrix t_mat, Matrix v_mat)
             core(i,j) = t_mat(i,j) + v_mat(i,j);
         }
     }
-
     return core;
 }
 
 
 //Read in two-electron repulsion integral
-void HartreeFock::read_tei(double* tei_ary, const char *filename)
+Vector HartreeFock::read_tei(Vector tei_ary, const char *filename)
 {
     //Open File here
     std::ifstream tei(filename);
@@ -180,15 +181,15 @@ void HartreeFock::read_tei(double* tei_ary, const char *filename)
         if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
         else ijkl = (kl*(kl+1)/2)+ij;
 
-        TEI[ijkl] = tei_val;
+        TEI(ijkl) = tei_val;
     }
     tei.close(); //Close input file
-    return;
+    return TEI;
 }
 
 
 //Build the orthogonalization matrix
-void HartreeFock::build_orthog(Matrix s_mat)
+Matrix HartreeFock::build_orthog(Matrix s_mat)
 {
     //To diagonalize we need to solve for eigenvectors and eigenvalues
     Eigen::SelfAdjointEigenSolver<Matrix> solver(s_mat);
@@ -202,24 +203,39 @@ void HartreeFock::build_orthog(Matrix s_mat)
 
     //Make sure the eigenvalues are a Diagonal Matrix
     Matrix EVL_D = EVL.asDiagonal();     //This should be nxn
-
-    //cout << endl;
+    SOM = EVC * EVL_D * EVC_T;
     //cout << "S^1/2 = Ls * D^1/2 * Ls^(T) = " << endl << EVC * EVL_D * EVC_T << endl;
-    return;
+    return SOM;
 }
 
 
 //Build the Initial Guess Density
-void HartreeFock::build_fock_guess(double** s_ortho, Matrix core_mat)
+//First, form the Initial (guess) Fock Matrix
+Matrix HartreeFock::build_fock_guess(Matrix s_ortho, Matrix core_mat)
 {
+    Matrix S_T = s_ortho.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
+    F_Guess = S_T * core_mat * s_ortho;          // core_mat is Core Hamiltonian used as guess
 
-    return;
+    return F_Guess;
 }
+//Second, Diagonalize the Fock Matrix
+Matrix HartreeFock::build_MO_coef(Matrix f_guess, Matrix SOM)
+{
+    //Diagonalize the Fock matrix
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(f_guess);
+    Matrix C_p0 = solver.eigenvectors();   //The eigenvectors we will use in the transformation
+    Matrix E_0 = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
+
+    //Transform the e-vectors into the original (non-orthogonal) AO basis
+    MO_coef = SOM * C_p0;
+    
+    return MO_coef;
+}
+//Third, build the Density Matrix using the occupied MOs
 
 
 //Delete allocated and used memory
 HartreeFock::~HartreeFock()
 {
-    delete[] TEI;
 }
 
