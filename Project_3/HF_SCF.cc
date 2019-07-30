@@ -34,13 +34,19 @@ int main()
     hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
 
     //Read and print two electron integral
-    hf.read_tei(hf.TEI, "eri.dat");
+    hf.TEI = hf.read_tei(hf.TEI, "eri.dat");
 
     //Build Orthogonalization Matrix
-    hf.build_orthog(hf.S);
+    hf.SOM = hf.build_orthog(hf.S);
+    hf.print_matrix("Symmetric Orthogonalization Matrix (S^1/2): \n", hf.SOM); 
 
     //Build Initial Guess Density
-    //hf.build_fock_guess(?, hf.core);
+    //Build Initial (guess) Fock Matrix
+    hf.F_Guess = hf.build_fock_guess(hf.SOM, hf.core);
+    hf.print_matrix("Initial Fock Matrix: \n", hf.F_Guess); 
+    //Build Initial MO coefficient
+    hf.MO_coef = hf.build_MO_coef(hf.F_Guess, hf.SOM);
+    hf.print_matrix("Initial MO Coefficient Matrix: \n", hf.MO_coef);
 
     return 0;
 }
