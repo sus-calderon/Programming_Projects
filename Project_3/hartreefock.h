@@ -23,7 +23,9 @@ class HartreeFock
         Matrix V;
         Matrix core;    //My core Hamiltonian will be made up of the t and v (kinetic and potential)
         Matrix SOM;     //The Symmetric Orthogonal Overlap Matrix
-        Vector TEI;    //Two electron repulsion integral
+        Vector TEI;     //Two electron repulsion integral
+        Matrix F_Guess; //Initial (guess) Fock Matrix
+        Matrix MO_coef; //Inital Coefficient Matrix
 
         void print_matrix(string mat_string, Matrix matrix);      
 
@@ -35,7 +37,9 @@ class HartreeFock
 
         Matrix build_core(Matrix t_mat, Matrix v_mat);
         Matrix build_orthog(Matrix s_mat);
-        void build_fock_guess(double** s_ortho, Matrix core_mat);
+        Matrix build_fock_guess(Matrix s_ortho, Matrix core_mat);
+        Matrix build_MO_coef(Matrix f_guess, Matrix SOM);
+        Matrix build_density(Matrix MO_coef);
 
         HartreeFock(const char *filename);
         ~HartreeFock();
