@@ -28,7 +28,7 @@ int main()
     hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
 
     hf.V = hf.read_potential(hf.V, "v.dat");
-    hf.print_matrix("Potential Energy Integral Matrix (v): \n", hf.V);
+    hf.print_matrix("Nuclear Attraction Integral Matrix (v): \n", hf.V);
 
     hf.core = hf.build_core(hf.T, hf.V);
     hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
@@ -46,7 +46,11 @@ int main()
     hf.print_matrix("Initial Fock Matrix: \n", hf.F_Guess); 
     //Build Initial MO coefficient
     hf.MO_coef = hf.build_MO_coef(hf.F_Guess, hf.SOM);
-    hf.print_matrix("Initial MO Coefficient Matrix: \n", hf.MO_coef);
+    hf.print_matrix("Initial Coefficient Matrix: \n", hf.MO_coef);
+    //Build Density Matrix
+    //hf.D = hf.build_density(hf.MO_coef);
+    //hf.print_matrix("Initial Density Matrix: \n", hf.D);
+
 
     return 0;
 }
