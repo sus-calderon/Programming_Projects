@@ -26,6 +26,7 @@ class HartreeFock
         Vector TEI;     //Two electron repulsion integral
         Matrix F_Guess; //Initial (guess) Fock Matrix
         Matrix MO_coef; //Inital Coefficient Matrix
+        Matrix D;       //Density Matrix
 
         void print_matrix(string mat_string, Matrix matrix);      
 
