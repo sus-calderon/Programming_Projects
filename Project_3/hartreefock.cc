@@ -9,6 +9,8 @@
 #include <cassert>
 #include <cmath>
 #include "hartreefock.h"
+#include "molecule.h"
+#include "electrons.h"
 
 //Include Eigen package for easy diagonalization
 #include "Eigen/Dense"
@@ -62,71 +64,6 @@ HartreeFock::HartreeFock(const char *filename)
 }
 
 
-//Read in and print out nuclear repulsion energy
-void HartreeFock::read_enuc(const char *filename)
-{
-    std::ifstream nucl(filename);
-    assert(nucl.good());
-    nucl >> enuc;
-    cout << endl;
-    printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
-    nucl.close();
-    return;
-}
-
-
-//Read in one electron integrals and store into respective matrices
-Matrix HartreeFock::read_overlap(Matrix oei_mat, const char *filename)
-{
-    //Open File here
-    std::ifstream oei(filename);
-    assert(oei.good());
-
-    //Read in data
-    int m;
-    int n;
-    while( oei >> m >> n >> oei_mat(m-1,n-1) ) {
-        oei_mat(n-1,m-1) = oei_mat(m-1,n-1);
-    }
-    oei.close(); //Close input file
-    return oei_mat;
-}
-
-Matrix HartreeFock::read_kinetic(Matrix oei_mat, const char *filename)
-{
-    //Open File here
-    std::ifstream oei(filename);
-    assert(oei.good());
-
-    //Read in data
-    int m;
-    int n;
-    while( oei >> m >> n >> oei_mat(m-1,n-1) ) {
-        oei_mat(n-1,m-1) = oei_mat(m-1,n-1);
-    }
-   
-    oei.close(); //Close input file
-    return oei_mat;
-}
-
-Matrix HartreeFock::read_potential(Matrix oei_mat, const char *filename)
-{
-    //Open File here
-    std::ifstream oei(filename);
-    assert(oei.good());
-
-    //Read in data
-    int m;
-    int n;
-    while( oei >> m >> n >> oei_mat(m-1,n-1) ) {
-        oei_mat(n-1,m-1) = oei_mat(m-1,n-1);
-    }
-   
-    oei.close(); //Close input file
-    return oei_mat;
-}
-
-
 //Print out whatever matrix I assign to it (ixj matrix)
 void HartreeFock::print_matrix(std::string mat_string, Matrix matrix)
 {
@@ -141,14 +78,89 @@ void HartreeFock::print_matrix(std::string mat_string, Matrix matrix)
     cout << endl;
     return;
 }
+void HartreeFock::print_matrix(std::string mat_string, Vector vect)
+{
+    cout << endl;
+    cout << mat_string;
+    for(int i=0; i<vect.size(); i++) {
+        printf("%13.7f\n", vect(i));
+    }
+    cout << endl;
+    return;
+}
+
+
+//Read in and print out nuclear repulsion energy
+void HartreeFock::read_enuc(const char *filename)
+{
+    std::ifstream nucl(filename);
+    assert(nucl.good());
+    nucl >> enuc;
+    cout << endl;
+    printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
+    nucl.close();
+    return;
+}
+
+
+//Read in one electron integrals and store into respective matrices
+Matrix HartreeFock::read_overlap(HartreeFock hf, const char *filename)
+{
+    //Open File here
+    std::ifstream oei(filename);
+    assert(oei.good());
+
+    //Read in data
+    int m;
+    int n;
+    while( oei >> m >> n >> hf.S(m-1,n-1) ) {
+        hf.S(n-1,m-1) = hf.S(m-1,n-1);
+    }
+    oei.close(); //Close input file
+    return hf.S;
+}
+
+Matrix HartreeFock::read_kinetic(HartreeFock hf, const char *filename)
+{
+    //Open File here
+    std::ifstream oei(filename);
+    assert(oei.good());
+
+    //Read in data
+    int m;
+    int n;
+    while( oei >> m >> n >> hf.T(m-1,n-1) ) {
+        hf.T(n-1,m-1) = hf.T(m-1,n-1);
+    }
+   
+    oei.close(); //Close input file
+    return hf.T;
+}
+
+Matrix HartreeFock::read_potential(HartreeFock hf, const char *filename)
+{
+    //Open File here
+    std::ifstream oei(filename);
+    assert(oei.good());
+
+    //Read in data
+    int m;
+    int n;
+    while( oei >> m >> n >> hf.V(m-1,n-1) ) {
+        hf.V(n-1,m-1) = hf.V(m-1,n-1);
+    }
+   
+    oei.close(); //Close input file
+    return hf.V;
+}
 
 
 //Build Core Hamiltonian from Kinetic Energy Integral and Nuclear Attraction Integral 
-Matrix HartreeFock::build_core(Matrix t_mat, Matrix v_mat)
+Matrix HartreeFock::build_core(HartreeFock hf)
 {
     for(int i=0; i<core.rows(); i++) {
         for(int j=0; j<core.cols(); j++) {
-            core(i,j) = t_mat(i,j) + v_mat(i,j);
+            core(i,j) = hf.T(i,j) + hf.V(i,j);
         }
     }
     return core;
@@ -156,7 +168,7 @@ Matrix HartreeFock::build_core(Matrix t_mat, Matrix v_mat)
 
 
 //Read in two-electron repulsion integral
-Vector HartreeFock::read_tei(Vector tei_ary, const char *filename)
+Vector HartreeFock::read_tei(HartreeFock hf, const char *filename)
 {
     //Open File here
     std::ifstream tei(filename);
@@ -181,18 +193,18 @@ Vector HartreeFock::read_tei(Vector tei_ary, const char *filename)
         if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
         else ijkl = (kl*(kl+1)/2)+ij;
 
-        TEI(ijkl) = tei_val;
+        hf.TEI(ijkl) = tei_val;
     }
     tei.close(); //Close input file
-    return TEI;
+    return hf.TEI;
 }
 
 
 //Build the orthogonalization matrix
-Matrix HartreeFock::build_orthog(Matrix s_mat)
+Matrix HartreeFock::build_orthog(HartreeFock hf)
 {
     //To diagonalize we need to solve for eigenvectors and eigenvalues
-    Eigen::SelfAdjointEigenSolver<Matrix> solver(s_mat);
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.S);
     Matrix evc = solver.eigenvectors();     //This is a matrix nxn
     Matrix evc_T = evc.transpose();         //This will stay nxn
     Matrix evl = solver.eigenvalues();      //This is a vector nx1
@@ -212,35 +224,40 @@ Matrix HartreeFock::build_orthog(Matrix s_mat)
 //Build the Initial Guess Density
 //
 //First, form the Initial (guess) Fock Matrix
-Matrix HartreeFock::build_fock_guess(Matrix s_ortho, Matrix core_mat)
+Matrix HartreeFock::build_fock_guess(HartreeFock hf)
 {
-    Matrix S_T = s_ortho.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
-    F_Guess = S_T * core_mat * s_ortho;          // core_mat is Core Hamiltonian used as guess
+    Matrix S_T = hf.S.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
+    F_Guess = S_T * hf.core * hf.S;          // core_mat is Core Hamiltonian used as guess
 
     return F_Guess;
 }
 
 //Second, Diagonalize the Fock Matrix and transform its e-vectors into the og AO basis
-Matrix HartreeFock::build_MO_coef(Matrix f_guess, Matrix SOM)
+Matrix HartreeFock::build_MO_coef(HartreeFock hf)
 {
     //Diagonalize the Fock matrix
-    Eigen::SelfAdjointEigenSolver<Matrix> solver(f_guess);
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.F_Guess);
     Matrix C_p0 = solver.eigenvectors();   //The eigenvectors we will use in the transformation
     Matrix E_0 = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
 
+    print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
+    print_matrix("Eigenvalues (Orbital energies): \n", E_0);
+
     //Transform the e-vectors into the original (non-orthogonal) AO basis
-    MO_coef = SOM * C_p0;
+    MO_coef = hf.SOM * C_p0;
     
     return MO_coef;
 }
 
 //Third, build the Density Matrix using the occupied MOs
-Matrix HartreeFock::build_density(Matrix MO_coef)
-{
-    Matrix C_T = MO_coef.transpose();
-    D = MO_coef * C_T;
+void HartreeFock::build_density(Matrix MO_coef, int elec_num) 
+{   
+    //We will have calculated total # of electrons in molecule.cc
+    //Use that value to find the # of double occupied orbitals
+    int m = elec_num/2;    // m is the number of doubly-occupied orbitals
+    cout << "Number of doubley occupied orbitals: " << m << endl;
 
-    return D;
+    return;
 }
 
 
