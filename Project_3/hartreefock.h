@@ -29,18 +29,19 @@ class HartreeFock
         Matrix D;       //Density Matrix
 
         void print_matrix(string mat_string, Matrix matrix);      
+        void print_matrix(string mat_string, Vector vect);      
 
         void read_enuc(const char *filename);
-        Matrix read_overlap(Matrix oei_mat, const char *filename);
-        Matrix read_kinetic(Matrix oei_mat, const char *filename);
-        Matrix read_potential(Matrix oei_mat, const char *filename);
-        Vector read_tei(Vector tei_ary, const char *filename);
+        Matrix read_overlap(HartreeFock hf, const char *filename);
+        Matrix read_kinetic(HartreeFock hf, const char *filename);
+        Matrix read_potential(HartreeFock hf, const char *filename);
+        Vector read_tei(HartreeFock hf, const char *filename);
 
-        Matrix build_core(Matrix t_mat, Matrix v_mat);
-        Matrix build_orthog(Matrix s_mat);
-        Matrix build_fock_guess(Matrix s_ortho, Matrix core_mat);
-        Matrix build_MO_coef(Matrix f_guess, Matrix SOM);
-        Matrix build_density(Matrix MO_coef);
+        Matrix build_core(HartreeFock hf);
+        Matrix build_orthog(HartreeFock hf);
+        Matrix build_fock_guess(HartreeFock hf);
+        Matrix build_MO_coef(HartreeFock hf);
+        void build_density(Matrix MO_coef, int elec_num);
 
         HartreeFock(const char *filename);
         ~HartreeFock();
