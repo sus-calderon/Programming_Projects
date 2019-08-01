@@ -45,15 +45,14 @@ int main()
     //Build Initial Guess Density
     //Build Initial (guess) Fock Matrix
     hf.F_Guess = hf.build_fock_guess(hf);
-    hf.print_matrix("Initial Fock Matrix: \n", hf.F_Guess); 
+    hf.print_matrix("Initial Fock Matrix (F'): \n", hf.F_Guess); 
     //Build Initial MO coefficient
     hf.MO_coef = hf.build_MO_coef(hf);
-    hf.print_matrix("Initial Coefficient Matrix: \n", hf.MO_coef);
+    hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.MO_coef);
     //Build Density Matrix
-    //hf.D = hf.build_density(hf.MO_coef);
-    mol.electron = mol.electron_count();
-    hf.build_density(hf.MO_coef, mol.electron);
-    //hf.print_matrix("Initial Density Matrix: \n", hf.D);
+    //mol.electron = mol.electron_count();
+    hf.D = hf.build_density(hf, mol.electron_count());
+    hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
 
 
     return 0;
