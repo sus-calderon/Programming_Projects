@@ -10,7 +10,6 @@
 #include <cmath>
 #include "hartreefock.h"
 #include "molecule.h"
-#include "electrons.h"
 
 //Include Eigen package for easy diagonalization
 #include "Eigen/Dense"
@@ -51,6 +50,7 @@ HartreeFock::HartreeFock(const char *filename)
     V.resize(norb, norb);
     core.resize(norb, norb);
     SOM.resize(norb, norb);
+    D.resize(norb,norb);
 
     //Create linear array for Two electron integral
     int M = (norb*(norb+1))/2;      //Number of elements in matrix ixj
@@ -78,7 +78,7 @@ void HartreeFock::print_matrix(std::string mat_string, Matrix matrix)
     cout << endl;
     return;
 }
-void HartreeFock::print_matrix(std::string mat_string, Vector vect)
+void HartreeFock::print_vector(std::string mat_string, Vector vect)
 {
     cout << endl;
     cout << mat_string;
@@ -226,8 +226,8 @@ Matrix HartreeFock::build_orthog(HartreeFock hf)
 //First, form the Initial (guess) Fock Matrix
 Matrix HartreeFock::build_fock_guess(HartreeFock hf)
 {
-    Matrix S_T = hf.S.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
-    F_Guess = S_T * hf.core * hf.S;          // core_mat is Core Hamiltonian used as guess
+    Matrix S_T = hf.SOM.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
+    F_Guess = S_T * hf.core * hf.SOM;          // core_mat is Core Hamiltonian used as guess
 
     return F_Guess;
 }
@@ -240,24 +240,25 @@ Matrix HartreeFock::build_MO_coef(HartreeFock hf)
     Matrix C_p0 = solver.eigenvectors();   //The eigenvectors we will use in the transformation
     Matrix E_0 = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
 
-    print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
-    print_matrix("Eigenvalues (Orbital energies): \n", E_0);
+    //print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
+    //print_vector("Eigenvalues (Orbital energies): \n", E_0);
 
     //Transform the e-vectors into the original (non-orthogonal) AO basis
     MO_coef = hf.SOM * C_p0;
-    
+
     return MO_coef;
 }
 
 //Third, build the Density Matrix using the occupied MOs
-void HartreeFock::build_density(Matrix MO_coef, int elec_num) 
+Matrix HartreeFock::build_density(HartreeFock hf, int elec_num) 
 {   
     //We will have calculated total # of electrons in molecule.cc
-    //Use that value to find the # of double occupied orbitals
-    int m = elec_num/2;    // m is the number of doubly-occupied orbitals
-    cout << "Number of doubley occupied orbitals: " << m << endl;
-
-    return;
+    int occ = elec_num/2;             // occ is the number of doubly-occupied orbitals
+    Matrix C_do = MO_coef.block(0,0,MO_coef.rows(),occ);
+    D = C_do * C_do.transpose();      //C_do is 7x5 and C_do_T is 5x7 so my resulting matrix is 7x7
+    //print_matrix("Truncated Doubly Occupied MO Coefficient Matrix: \n", C_do);
+    //print_matrix("Transpose of Truncated Coefficient Matrix: \n", C_do.transpose());
+    return D;
 }
 
 
