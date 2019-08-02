@@ -11,6 +11,9 @@
 #include "hartreefock.h"
 #include "molecule.h"
 
+#define BIGNUM 1000     //So defining BIGNUM here allows it be of GLOBAL use
+#define INDEX(i,j) (i>j) ? (ioff(i)+j) : (ioff(j)+i)
+
 //Include Eigen package for easy diagonalization
 #include "Eigen/Dense"
 #include "Eigen/Eigenvalues"
@@ -56,6 +59,7 @@ HartreeFock::HartreeFock(const char *filename)
     int M = (norb*(norb+1))/2;      //Number of elements in matrix ixj
     int N = (M*(M+1))/2;            //Number of elements in super matrix ijxkl
     TEI.resize(N);                  //So this will just be a linear array of size N to hold all elements of ijxkl
+    ioff.resize(BIGNUM);
 
     //Create Fock Matrix of same dimension as core and oei matrices
     F_Guess.resize(norb,norb);
@@ -78,6 +82,7 @@ void HartreeFock::print_matrix(std::string mat_string, Matrix matrix)
     cout << endl;
     return;
 }
+
 void HartreeFock::print_vector(std::string mat_string, Vector vect)
 {
     cout << endl;
@@ -91,7 +96,7 @@ void HartreeFock::print_vector(std::string mat_string, Vector vect)
 
 
 //Read in and print out nuclear repulsion energy
-void HartreeFock::read_enuc(const char *filename)
+double HartreeFock::read_enuc(const char *filename)
 {
     std::ifstream nucl(filename);
     assert(nucl.good());
@@ -99,7 +104,7 @@ void HartreeFock::read_enuc(const char *filename)
     cout << endl;
     printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
     nucl.close();
-    return;
+    return enuc;
 }
 
 
@@ -175,28 +180,35 @@ Vector HartreeFock::read_tei(HartreeFock hf, const char *filename)
     assert(tei.good());
 
     //Read in file
+    ioff(0) = 0;
+    for(int n=1; n<1000; n++) {
+       ioff(n) = ioff(n-1) + n;
+    }
+
     int i, j, k, l, ij, kl, ijkl;
     double tei_val;        //Just need something to hold the value read in
     while( tei >> i >> j >> k >> l >> tei_val ) {
-
         i-=1;
         j-=1;
         k-=1;
         l-=1;
         
-        if(i>j) ij = i*(i+1)/2 + j;
-        else ij = j*(j+1)/2 + i;
+        //ij = (i>j) ? (i*(i+1)/2 + j) : (j*(j+1)/2 + i);
+        //This is a shortened version of the if else statement below
+        // using conditional (ternary) operators
+        //(condition) ? (if_true) : (if_false);
+        //if(i>j) ij = i*(i+1)/2 + j;
+        //else ij = j*(j+1)/2 + i;
 
-        if(k>l) kl = k*(k+1)/2 + l;
-        else kl = l*(l+1)/2 + k;
-        
-        if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
-        else ijkl = (kl*(kl+1)/2)+ij;
+        ij = (i>j) ? (ioff(i) + j) : (ioff(j) + i);
+        kl = (k>l) ? (ioff(k) + l) : (ioff(l) + k);
+        ijkl = (ij>kl) ? (ioff(ij) + kl) : (ioff(kl) + ij); 
 
-        hf.TEI(ijkl) = tei_val;
+        TEI(ijkl) = tei_val;
+
     }
     tei.close(); //Close input file
-    return hf.TEI;
+    return TEI;
 }
 
 
@@ -231,7 +243,6 @@ Matrix HartreeFock::build_fock_guess(HartreeFock hf)
 
     return F_Guess;
 }
-
 //Second, Diagonalize the Fock Matrix and transform its e-vectors into the og AO basis
 Matrix HartreeFock::build_MO_coef(HartreeFock hf)
 {
@@ -248,17 +259,77 @@ Matrix HartreeFock::build_MO_coef(HartreeFock hf)
 
     return MO_coef;
 }
-
 //Third, build the Density Matrix using the occupied MOs
+//So later steps say to rebuild Density matrix and SCF energy so it's probably best to generalize this function
+//In this case, using a class type makes it too specific within the function
 Matrix HartreeFock::build_density(HartreeFock hf, int elec_num) 
 {   
     //We will have calculated total # of electrons in molecule.cc
     int occ = elec_num/2;             // occ is the number of doubly-occupied orbitals
-    Matrix C_do = MO_coef.block(0,0,MO_coef.rows(),occ);
+    Matrix C_do = hf.MO_coef.block(0,0,hf.MO_coef.rows(),occ);
     D = C_do * C_do.transpose();      //C_do is 7x5 and C_do_T is 5x7 so my resulting matrix is 7x7
     //print_matrix("Truncated Doubly Occupied MO Coefficient Matrix: \n", C_do);
     //print_matrix("Transpose of Truncated Coefficient Matrix: \n", C_do.transpose());
     return D;
+}
+
+
+//Compute the initial SCF Energy
+double HartreeFock::compute_SCF(HartreeFock hf)
+{
+    SCF = 0.0;
+    for(int i=0; i<hf.D.rows(); i++) {
+        for(int j=0; j<hf.D.cols(); j++) {
+            SCF += hf.D(i,j) * (hf.core(i,j) + hf.core(i,j));
+        }
+    }
+
+    tot_E = SCF + hf.enuc;
+    return SCF;
+}
+
+
+//Compute the new Fock matrix (F) for the SCF procedure
+Matrix HartreeFock::compute_Fock(HartreeFock hf)
+{
+    int i, j, k, l, ij, kl, ijkl, ik, jl, ikjl;
+    F = hf.core;                    //So the new Fock matrix comes from adding core_H to Density*TEI
+    int rows = F.rows();
+    for(i=0; i<rows; i++) {
+        for(j=0; j<rows; j++) {
+            for(k=0; k<rows; k++) {
+                for(l=0; l<rows; l++) {
+                    ij = INDEX(i,j);
+                    //if(i>j) ij = i*(i+1)/2 + j;
+                    //else ij = j*(j+1)/2 + i;
+
+                    kl = INDEX(k,l);
+                    //if(k>l) kl = k*(k+1)/2 + l;
+                    //else kl = l*(l+1)/2 + k;
+
+                    ijkl = INDEX(ij,kl);
+                    //if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
+                    //else ijkl = (kl*(kl+1)/2)+ij;
+                    
+                    ik = INDEX(i,k);
+                    //if(i>k) ik = i*(i+1)/2 + k;
+                    //else ik = k*(k+1)/2 + i;
+
+                    jl = INDEX(j,l);
+                    //if(j>l) jl = j*(j+1)/2 + l;
+                    //else jl = l*(l+1)/2 + j;
+
+                    ikjl = INDEX(ik,jl);
+                    //if(ik>jl) ikjl = (ik*(ik+1)/2)+jl;
+                    //else ikjl = (jl*(jl+1)/2)+ik;
+
+                    F(i,j) += hf.D(k,l) * (2.0 * hf.TEI(ijkl) - hf.TEI(ikjl));
+                }
+            }
+        } 
+    }
+    
+    return F;
 }
 
 
