@@ -1,4 +1,4 @@
-// <hartreefock.h>
+// <.h>
 // My .h file will contain declaration of variables and functions.
 // Written on July 15, 2019 by Susana Calderon
 // Defined in hartreefock.cc
@@ -24,14 +24,18 @@ class HartreeFock
         Matrix core;    //My core Hamiltonian will be made up of the t and v (kinetic and potential)
         Matrix SOM;     //The Symmetric Orthogonal Overlap Matrix
         Vector TEI;     //Two electron repulsion integral
+        Vector ioff;
         Matrix F_Guess; //Initial (guess) Fock Matrix
         Matrix MO_coef; //Inital Coefficient Matrix
         Matrix D;       //Density Matrix
+        Matrix F;       //New Fock matrix formed from Density matrix and tei
+        double SCF;
+        double tot_E;
 
         void print_matrix(string mat_string, Matrix matrix);      
         void print_vector(string mat_string, Vector vect);      
 
-        void read_enuc(const char *filename);
+        double read_enuc(const char *filename);
         Matrix read_overlap(HartreeFock hf, const char *filename);
         Matrix read_kinetic(HartreeFock hf, const char *filename);
         Matrix read_potential(HartreeFock hf, const char *filename);
@@ -42,6 +46,9 @@ class HartreeFock
         Matrix build_fock_guess(HartreeFock hf);
         Matrix build_MO_coef(HartreeFock hf);
         Matrix build_density(HartreeFock hf, int elec_num);
+        
+        Matrix compute_Fock(HartreeFock hf);
+        double compute_SCF(HartreeFock hf);
 
         HartreeFock(const char *filename);
         ~HartreeFock();
