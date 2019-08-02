@@ -20,7 +20,7 @@ int main()
     HartreeFock hf("s.dat");
 
     //Read and print nuclear repulsion energy
-    hf.read_enuc("enuc.dat");
+    hf.enuc = hf.read_enuc("enuc.dat");
 
     //Read and print one electron integrals
     hf.S = hf.read_overlap(hf, "s.dat");
@@ -37,6 +37,7 @@ int main()
 
     //Read and print two electron integral
     hf.TEI = hf.read_tei(hf, "eri.dat");
+    //hf.print_vector("TEI array: \n", hf.TEI);
 
     //Build Orthogonalization Matrix
     hf.SOM = hf.build_orthog(hf);
@@ -50,10 +51,17 @@ int main()
     hf.MO_coef = hf.build_MO_coef(hf);
     hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.MO_coef);
     //Build Density Matrix
-    //mol.electron = mol.electron_count();
     hf.D = hf.build_density(hf, mol.electron_count());
     hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
 
+    //Compute the Initial SCF energy
+    hf.SCF = hf.compute_SCF(hf);
+    printf("The initial SCF electronic energy is %12.12f Hartrees.\n", hf.SCF);
+    printf("The total energy (sum of the SCF electronic energy and nuclear repulsion energy) is %12.12f Hartrees.\n", (hf.SCF + hf.enuc)); 
+
+    //Build the new Fock matrix (F) for the SCF proecure
+    hf.F = hf.compute_Fock(hf);
+    hf.print_matrix("Fock Matrix (F): \n", hf.F);
 
     return 0;
 }
