@@ -62,7 +62,7 @@ HartreeFock::HartreeFock(const char *filename)
     ioff.resize(BIGNUM);
 
     //Create Fock Matrix of same dimension as core and oei matrices
-    F_Guess.resize(norb,norb);
+    F.resize(norb,norb);
 
     is.close(); //Close input file
 }
@@ -109,7 +109,7 @@ double HartreeFock::read_enuc(const char *filename)
 
 
 //Read in one electron integrals and store into respective matrices
-Matrix HartreeFock::read_overlap(HartreeFock hf, const char *filename)
+int HartreeFock::read_overlap(HartreeFock& hf, const char *filename)
 {
     //Open File here
     std::ifstream oei(filename);
@@ -122,10 +122,13 @@ Matrix HartreeFock::read_overlap(HartreeFock hf, const char *filename)
         hf.S(n-1,m-1) = hf.S(m-1,n-1);
     }
     oei.close(); //Close input file
-    return hf.S;
+
+    print_matrix("Overlap Integral Matrix (s): \n", hf.S);
+
+    return 0;
 }
 
-Matrix HartreeFock::read_kinetic(HartreeFock hf, const char *filename)
+int HartreeFock::read_kinetic(HartreeFock& hf, const char *filename)
 {
     //Open File here
     std::ifstream oei(filename);
@@ -139,10 +142,13 @@ Matrix HartreeFock::read_kinetic(HartreeFock hf, const char *filename)
     }
    
     oei.close(); //Close input file
-    return hf.T;
+
+    hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
+
+    return 0;
 }
 
-Matrix HartreeFock::read_potential(HartreeFock hf, const char *filename)
+int HartreeFock::read_potential(HartreeFock& hf, const char *filename)
 {
     //Open File here
     std::ifstream oei(filename);
@@ -156,24 +162,30 @@ Matrix HartreeFock::read_potential(HartreeFock hf, const char *filename)
     }
    
     oei.close(); //Close input file
-    return hf.V;
+
+    hf.print_matrix("Nuclear Attraction Integral Matrix (v): \n", hf.V);
+
+    return 0;
 }
 
 
 //Build Core Hamiltonian from Kinetic Energy Integral and Nuclear Attraction Integral 
-Matrix HartreeFock::build_core(HartreeFock hf)
+int HartreeFock::build_core(HartreeFock& hf)
 {
-    for(int i=0; i<core.rows(); i++) {
-        for(int j=0; j<core.cols(); j++) {
-            core(i,j) = hf.T(i,j) + hf.V(i,j);
+    for(int i=0; i<hf.core.rows(); i++) {
+        for(int j=0; j<hf.core.cols(); j++) {
+            hf.core(i,j) = hf.T(i,j) + hf.V(i,j);
         }
     }
-    return core;
+
+    hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
+
+    return 0;
 }
 
 
 //Read in two-electron repulsion integral
-Vector HartreeFock::read_tei(HartreeFock hf, const char *filename)
+int HartreeFock::read_tei(HartreeFock& hf, const char *filename)
 {
     //Open File here
     std::ifstream tei(filename);
@@ -204,16 +216,19 @@ Vector HartreeFock::read_tei(HartreeFock hf, const char *filename)
         kl = (k>l) ? (ioff(k) + l) : (ioff(l) + k);
         ijkl = (ij>kl) ? (ioff(ij) + kl) : (ioff(kl) + ij); 
 
-        TEI(ijkl) = tei_val;
+        hf.TEI(ijkl) = tei_val;
 
     }
     tei.close(); //Close input file
-    return TEI;
+
+    //hf.print_vector("TEI array: \n", hf.TEI);
+
+    return 0;
 }
 
 
 //Build the orthogonalization matrix
-Matrix HartreeFock::build_orthog(HartreeFock hf)
+int HartreeFock::build_orthog(HartreeFock& hf)
 {
     //To diagonalize we need to solve for eigenvectors and eigenvalues
     Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.S);
@@ -227,109 +242,101 @@ Matrix HartreeFock::build_orthog(HartreeFock hf)
 
     //Make sure the eigenvalues are a Diagonal Matrix
     Matrix evl_D = evl.asDiagonal();     //This should be nxn
-    SOM = evc * evl_D * evc_T;
+    hf.SOM = evc * evl_D * evc_T;
 
-    return SOM;
+    hf.print_matrix("Symmetric Orthogonalization Matrix (S^1/2): \n", hf.SOM); 
+
+    return 0;
 }
 
 
-//Build the Initial Guess Density
+//This is Step 7, to which we return to if the difference in consecutive SCF energy and the 
+//root-mean-squared difference in consecutive densities do not fall below the prescribed thresholds.
 //
-//First, form the Initial (guess) Fock Matrix
-Matrix HartreeFock::build_fock_guess(HartreeFock hf)
-{
-    Matrix S_T = hf.SOM.transpose();      //Transpose of Symmetized Orthogonal Overlap Matrix (SOM)
-    F_Guess = S_T * hf.core * hf.SOM;          // core_mat is Core Hamiltonian used as guess
-
-    return F_Guess;
-}
-//Second, Diagonalize the Fock Matrix and transform its e-vectors into the og AO basis
-Matrix HartreeFock::build_MO_coef(HartreeFock hf)
-{
-    //Diagonalize the Fock matrix
-    Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.F_Guess);
-    Matrix C_p0 = solver.eigenvectors();   //The eigenvectors we will use in the transformation
-    Matrix E_0 = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
-
-    //print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
-    //print_vector("Eigenvalues (Orbital energies): \n", E_0);
-
-    //Transform the e-vectors into the original (non-orthogonal) AO basis
-    MO_coef = hf.SOM * C_p0;
-
-    return MO_coef;
-}
-//Third, build the Density Matrix using the occupied MOs
-//So later steps say to rebuild Density matrix and SCF energy so it's probably best to generalize this function
-//In this case, using a class type makes it too specific within the function
-Matrix HartreeFock::build_density(HartreeFock hf, int elec_num) 
-{   
-    //We will have calculated total # of electrons in molecule.cc
-    int occ = elec_num/2;             // occ is the number of doubly-occupied orbitals
-    Matrix C_do = hf.MO_coef.block(0,0,hf.MO_coef.rows(),occ);
-    D = C_do * C_do.transpose();      //C_do is 7x5 and C_do_T is 5x7 so my resulting matrix is 7x7
-    //print_matrix("Truncated Doubly Occupied MO Coefficient Matrix: \n", C_do);
-    //print_matrix("Transpose of Truncated Coefficient Matrix: \n", C_do.transpose());
-    return D;
-}
-
-
-//Compute the initial SCF Energy
-double HartreeFock::compute_SCF(HartreeFock hf)
-{
-    SCF = 0.0;
-    for(int i=0; i<hf.D.rows(); i++) {
-        for(int j=0; j<hf.D.cols(); j++) {
-            SCF += hf.D(i,j) * (hf.core(i,j) + hf.core(i,j));
-        }
-    }
-
-    tot_E = SCF + hf.enuc;
-    return SCF;
-}
-
-
-//Compute the new Fock matrix (F) for the SCF procedure
-Matrix HartreeFock::compute_Fock(HartreeFock hf)
+// Step 7: Compute the new Fock matrix (F) for the SCF procedure
+int HartreeFock::update_Fock(HartreeFock& hf)
 {
     int i, j, k, l, ij, kl, ijkl, ik, jl, ikjl;
-    F = hf.core;                    //So the new Fock matrix comes from adding core_H to Density*TEI
-    int rows = F.rows();
-    for(i=0; i<rows; i++) {
-        for(j=0; j<rows; j++) {
-            for(k=0; k<rows; k++) {
-                for(l=0; l<rows; l++) {
+    hf.F = hf.core;                    //So the new Fock matrix comes from adding core_H to Density*TEI
+    for(i=0; i<hf.F.rows(); i++) {
+        for(j=0; j<hf.F.rows(); j++) {
+            for(k=0; k<hf.F.rows(); k++) {
+                for(l=0; l<hf.F.rows(); l++) {
                     ij = INDEX(i,j);
                     //if(i>j) ij = i*(i+1)/2 + j;
                     //else ij = j*(j+1)/2 + i;
 
                     kl = INDEX(k,l);
-                    //if(k>l) kl = k*(k+1)/2 + l;
-                    //else kl = l*(l+1)/2 + k;
-
                     ijkl = INDEX(ij,kl);
-                    //if(ij>kl) ijkl = (ij*(ij+1)/2)+kl;
-                    //else ijkl = (kl*(kl+1)/2)+ij;
-                    
                     ik = INDEX(i,k);
-                    //if(i>k) ik = i*(i+1)/2 + k;
-                    //else ik = k*(k+1)/2 + i;
-
                     jl = INDEX(j,l);
-                    //if(j>l) jl = j*(j+1)/2 + l;
-                    //else jl = l*(l+1)/2 + j;
-
                     ikjl = INDEX(ik,jl);
-                    //if(ik>jl) ikjl = (ik*(ik+1)/2)+jl;
-                    //else ikjl = (jl*(jl+1)/2)+ik;
 
-                    F(i,j) += hf.D(k,l) * (2.0 * hf.TEI(ijkl) - hf.TEI(ikjl));
+                    hf.F(i,j) += hf.D(k,l) * (2.0 * hf.TEI(ijkl) - hf.TEI(ikjl));
                 }
             }
         } 
     }
+
+    if(hf.iter == 1){
+        hf.print_matrix("Fock Matrix (F): \n", hf.F);
+    }
     
-    return F;
+    return 0;
+}
+//
+// Step 8: Build the New Density Matrix
+int HartreeFock::build_density(HartreeFock& hf, int elec_num) 
+{   
+    //Transform Fock matrix (F -> F')
+    hf.F_p = hf.SOM.transpose() * hf.F * hf.SOM;            //Now new Fock matrix is used as guess 
+
+    //Print F' on first iteration
+    if(hf.iter == 0){
+        hf.print_matrix("Initial Fock Matrix (F'): \n", hf.F_p); 
+    }
+
+    //Diagonalize the F'
+    Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.F_p);
+    Matrix C_p = solver.eigenvectors();   //The eigenvectors we will use in the transformation
+    Matrix E = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
+
+    //print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
+    //print_vector("Eigenvalues (Orbital energies): \n", E_0);
+
+    //Transform the e-vectors into the original (non-orthogonal) AO basis
+    hf.C = hf.SOM * C_p;
+    
+    //Print C Matrix on first iteration
+    if(hf.iter == 0){
+        hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.C);
+    }
+
+    //Build Density
+    //We will have calculated total # of electrons in molecule.cc
+    int occ = elec_num/2;             // occ is the number of doubly-occupied orbitals
+    Matrix C_d = hf.C.block(0,0,hf.C.rows(),occ);
+    hf.D = C_d * C_d.transpose();      //C_do is 7x5 and C_do_T is 5x7 so my resulting matrix is 7x7
+
+    //Print density on first iteration
+    if(hf.iter == 0){
+        hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
+    }
+
+    return 0;
+}
+//
+// Step 9: Compute the New SCF Energy
+int HartreeFock::compute_SCF(HartreeFock& hf)
+{
+    hf.SCF = 0.0;
+    for(int i=0; i<hf.D.rows(); i++) {
+        for(int j=0; j<hf.D.cols(); j++) {
+            hf.SCF += hf.D(i,j) * (hf.core(i,j) + hf.F(i,j));
+        }
+    }
+    hf.tot_E = hf.SCF + hf.enuc;
+    return 0;
 }
 
 
