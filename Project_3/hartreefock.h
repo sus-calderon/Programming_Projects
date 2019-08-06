@@ -16,6 +16,7 @@ using namespace std;
 class HartreeFock     
 {
     public:             //This mean that all the fxns and variables can be used by any code that makes use of an object called HartreeFock
+        //Variables:
         double enuc;    //Nuclear repulsion energy
         int norb;       //Number of atomic orbitals in file (water has 7, 1s for each H, and 1s, 2s, and 3 2p for O)
         Matrix S;       //The overlap integral is a 7x7 integral, and so s[i][j]=1.00000 if i=j=1
@@ -25,30 +26,34 @@ class HartreeFock
         Matrix SOM;     //The Symmetric Orthogonal Overlap Matrix
         Vector TEI;     //Two electron repulsion integral
         Vector ioff;
-        Matrix F_Guess; //Initial (guess) Fock Matrix
-        Matrix MO_coef; //Inital Coefficient Matrix
         Matrix D;       //Density Matrix
         Matrix F;       //New Fock matrix formed from Density matrix and tei
+        Matrix F_p;     //Orthogonalized Fock matrix
+        Matrix C;       //New calculated coefficient matrix
+        int iter;
+        int iter_max;
         double SCF;
         double tot_E;
+        double old_SCF; //For my while loop, that tests for convergence
+        Matrix old_D;
 
+        //Functions
         void print_matrix(string mat_string, Matrix matrix);      
         void print_vector(string mat_string, Vector vect);      
 
         double read_enuc(const char *filename);
-        Matrix read_overlap(HartreeFock hf, const char *filename);
-        Matrix read_kinetic(HartreeFock hf, const char *filename);
-        Matrix read_potential(HartreeFock hf, const char *filename);
-        Vector read_tei(HartreeFock hf, const char *filename);
+        int read_overlap(HartreeFock& hf, const char *filename);
+        int read_kinetic(HartreeFock& hf, const char *filename);
+        int read_potential(HartreeFock& hf, const char *filename);
+        int build_core(HartreeFock& hf);
+        int read_tei(HartreeFock& hf, const char *filename);
 
-        Matrix build_core(HartreeFock hf);
-        Matrix build_orthog(HartreeFock hf);
-        Matrix build_fock_guess(HartreeFock hf);
-        Matrix build_MO_coef(HartreeFock hf);
-        Matrix build_density(HartreeFock hf, int elec_num);
+        int build_orthog(HartreeFock& hf);
+        int build_density(HartreeFock& hf, int elec_num);
         
-        Matrix compute_Fock(HartreeFock hf);
-        double compute_SCF(HartreeFock hf);
+        int compute_SCF(HartreeFock& hf);
+        int update_Fock(HartreeFock& hf);
+
 
         HartreeFock(const char *filename);
         ~HartreeFock();
