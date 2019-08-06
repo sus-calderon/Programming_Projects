@@ -23,46 +23,65 @@ int main()
     hf.enuc = hf.read_enuc("enuc.dat");
 
     //Read and print one electron integrals
-    hf.S = hf.read_overlap(hf, "s.dat");
-    hf.print_matrix("Overlap Integral Matrix (s): \n", hf.S);
-
-    hf.T = hf.read_kinetic(hf, "t.dat");
-    hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
-
-    hf.V = hf.read_potential(hf, "v.dat");
-    hf.print_matrix("Nuclear Attraction Integral Matrix (v): \n", hf.V);
-
-    hf.core = hf.build_core(hf);
-    hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
+    hf.read_overlap(hf, "s.dat");
+    hf.read_kinetic(hf, "t.dat");
+    hf.read_potential(hf, "v.dat");
+    hf.build_core(hf);
 
     //Read and print two electron integral
-    hf.TEI = hf.read_tei(hf, "eri.dat");
-    //hf.print_vector("TEI array: \n", hf.TEI);
+    hf.read_tei(hf, "eri.dat");
 
     //Build Orthogonalization Matrix
-    hf.SOM = hf.build_orthog(hf);
-    hf.print_matrix("Symmetric Orthogonalization Matrix (S^1/2): \n", hf.SOM); 
+    hf.build_orthog(hf);
 
-    //Build Initial Guess Density
-    //Build Initial (guess) Fock Matrix
-    hf.F_Guess = hf.build_fock_guess(hf);
-    hf.print_matrix("Initial Fock Matrix (F'): \n", hf.F_Guess); 
-    //Build Initial MO coefficient
-    hf.MO_coef = hf.build_MO_coef(hf);
-    hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.MO_coef);
-    //Build Density Matrix
-    hf.D = hf.build_density(hf, mol.electron_count());
-    hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
+    //Build Initial Guess Density with guess Fock Matrix
+    hf.F = hf.core;
+    hf.build_density(hf, mol.electron_count());
+    hf.old_D = hf.D;
 
     //Compute the Initial SCF energy
-    hf.SCF = hf.compute_SCF(hf);
-    printf("The initial SCF electronic energy is %12.12f Hartrees.\n", hf.SCF);
-    printf("The total energy (sum of the SCF electronic energy and nuclear repulsion energy) is %12.12f Hartrees.\n", (hf.SCF + hf.enuc)); 
+    hf.compute_SCF(hf);
+    hf.old_SCF = hf.SCF;
 
-    //Build the new Fock matrix (F) for the SCF proecure
-    hf.F = hf.compute_Fock(hf);
-    hf.print_matrix("Fock Matrix (F): \n", hf.F);
+    printf("The initial SCF electronic energy is %12.12f Hartrees.\n", hf.SCF);
+    printf("The total energy (sum of the SCF electronic energy and nuclear repulsion energy) is %12.12f Hartrees.\n", hf.tot_E);
+
+    //Build the new Density matrix and iterate Step 7-9 until convergence is reached
+    double tol = 1e-12;
+    hf.iter_max = 100;
+    hf.iter = 0;
+    double delta_E = 1.0;
+    while(abs(delta_E) > tol && hf.iter < hf.iter_max) {
+        hf.iter+=1;
+        double rms_D = 0.0;
+
+        //Build the new Fock matrix (F) for the SCF proecure
+        hf.update_Fock(hf);
+        //Build the new Density matrix (D)
+        hf.build_density(hf, mol.electron_count());
+        //Compute the new SCF energy
+        hf.compute_SCF(hf);
+
+        //Test the SCF electronic energy for convergence
+        delta_E = hf.SCF - hf.old_SCF;
+        hf.old_SCF = hf.SCF;
+
+        //Test the root-mean-squared difference in Densities for convergence
+        for(int i=0; i<hf.D.rows(); i++) {
+            for(int j=0; j<hf.D.cols(); j++) {
+                rms_D += (hf.D(i,j) - hf.old_D(i,j))*(hf.D(i,j) - hf.old_D(i,j));
+            }
+        }
+        rms_D = sqrt(rms_D); 
+        hf.old_D = hf.D;
+
+        //Print out iterations and corresponding SCF and total electronic energy, along with Delta E and RMS_D
+        if(hf.iter == 1) {
+            printf("%-12s %-20s %-20s %-20s %-20s \n", "Iter", "E(elec)", "E(tot)", "Delta(E)", "RMS(D)");
+        }
+        printf("%04d %20.12f %20.12f %20.12f %20.12f \n", hf.iter, hf.SCF, hf.tot_E, delta_E, rms_D);
+
+    }
 
     return 0;
 }
-
