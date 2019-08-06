@@ -20,3 +20,7 @@ HVF_calculator
 
 # Ignore files from Project_3
 HF_SCF
+
+# Ignore files from Project_4
+Project_4/molecule.cc
+Project_4/molecule.h
