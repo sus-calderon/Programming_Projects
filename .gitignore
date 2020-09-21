@@ -24,3 +24,5 @@ HF_SCF
 # Ignore files from Project_4
 Project_4/molecule.cc
 Project_4/molecule.h
+MP2_CPU_time.xlsx
+~$MP2_CPU_time.xlsx
