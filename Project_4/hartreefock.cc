@@ -13,6 +13,7 @@
 
 #define BIGNUM 1000     //So defining BIGNUM here allows it be of GLOBAL use
 #define INDEX(i,j) (i>j) ? (ioff(i)+j) : (ioff(j)+i)
+//#define INDEX(i,j) ((i>j) ? (((i)*((i)+1)/2)+ (j)) : (((j)*((j)+1/2)+(i)))
 
 //Include Eigen package for easy diagonalization
 #include "Eigen/Dense"
@@ -45,7 +46,7 @@ HartreeFock::HartreeFock(const char *filename)
 
     //Grab first value of last line and assign it to norb = # of AOs
     is >> norb;
-    cout << "Number of atomic orbitals: " << norb << endl;
+    //cout << "Number of atomic orbitals: " << norb << endl;
 
     //Using norbs, create an norb x norb Matrix for the oei
     S.resize(norb, norb);
@@ -59,6 +60,8 @@ HartreeFock::HartreeFock(const char *filename)
     int M = (norb*(norb+1))/2;      //Number of elements in matrix ixj
     int N = (M*(M+1))/2;            //Number of elements in super matrix ijxkl
     TEI.resize(N);                  //So this will just be a linear array of size N to hold all elements of ijxkl
+    TEI_MO.resize(N);
+
     ioff.resize(BIGNUM);
 
     //Create Fock Matrix of same dimension as core and oei matrices
@@ -102,7 +105,7 @@ double HartreeFock::read_enuc(const char *filename)
     assert(nucl.good());
     nucl >> enuc;
     cout << endl;
-    printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
+    //printf("Nuclear Repulsion Energy: %12.15f \n", enuc);
     nucl.close();
     return enuc;
 }
@@ -123,7 +126,7 @@ int HartreeFock::read_overlap(HartreeFock& hf, const char *filename)
     }
     oei.close(); //Close input file
 
-    print_matrix("Overlap Integral Matrix (s): \n", hf.S);
+    //print_matrix("Overlap Integral Matrix (s): \n", hf.S);
 
     return 0;
 }
@@ -143,7 +146,7 @@ int HartreeFock::read_kinetic(HartreeFock& hf, const char *filename)
    
     oei.close(); //Close input file
 
-    hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
+    //hf.print_matrix("Kinetic Energy Integral Matrix (t): \n", hf.T);
 
     return 0;
 }
@@ -163,7 +166,7 @@ int HartreeFock::read_potential(HartreeFock& hf, const char *filename)
    
     oei.close(); //Close input file
 
-    hf.print_matrix("Nuclear Attraction Integral Matrix (v): \n", hf.V);
+    //hf.print_matrix("Nuclear Attraction Integral Matrix (v): \n", hf.V);
 
     return 0;
 }
@@ -178,7 +181,7 @@ int HartreeFock::build_core(HartreeFock& hf)
         }
     }
 
-    hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
+    //hf.print_matrix("Core Hamiltonian Matrix (h): \n", hf.core);
 
     return 0;
 }
@@ -244,7 +247,7 @@ int HartreeFock::build_orthog(HartreeFock& hf)
     Matrix evl_D = evl.asDiagonal();     //This should be nxn
     hf.SOM = evc * evl_D * evc_T;
 
-    hf.print_matrix("Symmetric Orthogonalization Matrix (S^1/2): \n", hf.SOM); 
+    //hf.print_matrix("Symmetric Orthogonalization Matrix (S^1/2): \n", hf.SOM); 
 
     return 0;
 }
@@ -279,7 +282,7 @@ int HartreeFock::update_Fock(HartreeFock& hf)
     }
 
     if(hf.iter == 1){
-        hf.print_matrix("Fock Matrix (F): \n", hf.F);
+        //hf.print_matrix("Fock Matrix (F): \n", hf.F);
     }
     
     return 0;
@@ -293,13 +296,14 @@ int HartreeFock::build_density(HartreeFock& hf, int elec_num)
 
     //Print F' on first iteration
     if(hf.iter == 0){
-        hf.print_matrix("Initial Fock Matrix (F'): \n", hf.F_p); 
+        //hf.print_matrix("Initial Fock Matrix (F'): \n", hf.F_p); 
     }
 
     //Diagonalize the F'
     Eigen::SelfAdjointEigenSolver<Matrix> solver(hf.F_p);
     Matrix C_p = solver.eigenvectors();   //The eigenvectors we will use in the transformation
-    Matrix E = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
+    //Matrix E = solver.eigenvalues();     //The eigenvalules - E_0 matrix containing the initial orbital energies
+    hf.E_p = solver.eigenvalues();
 
     //print_matrix("Eigenvectors (C' Matrix): \n", C_p0);
     //print_vector("Eigenvalues (Orbital energies): \n", E_0);
@@ -309,7 +313,7 @@ int HartreeFock::build_density(HartreeFock& hf, int elec_num)
     
     //Print C Matrix on first iteration
     if(hf.iter == 0){
-        hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.C);
+        //hf.print_matrix("Initial Coefficient Matrix (C): \n", hf.C);
     }
 
     //Build Density
@@ -320,7 +324,7 @@ int HartreeFock::build_density(HartreeFock& hf, int elec_num)
 
     //Print density on first iteration
     if(hf.iter == 0){
-        hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
+        //hf.print_matrix("Initial Density Matrix (D): \n", hf.D);
     }
 
     return 0;
@@ -336,6 +340,74 @@ int HartreeFock::compute_SCF(HartreeFock& hf)
         }
     }
     hf.tot_E = hf.SCF + hf.enuc;
+    return 0;
+}
+
+// MP2 CODE
+// Step 3: Transform the 2e integrals from AO to MO basis
+int HartreeFock::transform_AO_2_MO(HartreeFock& hf)
+{
+    int ijkl;
+    int pq, rs, pqrs;
+
+    //Noddy code:
+    for(int i=0; i<norb; i++)
+    {
+        for(int j=0; j<=i; j++)
+        {
+            for(int k=0; k<=i; k++)
+            {
+                for(int l=0; l<=(i==k ? j:k); l++, ijkl++)
+                {
+                    for(int p=0; p<norb; p++)
+                    {
+                        for(int q=0; q<norb; q++)
+                        {
+                            pq = INDEX(p,q);
+                            for(int r=0; r<norb; r++)
+                            {
+                                for(int s=0; s<norb; s++) {
+                                    rs=INDEX(r,s);
+                                    pqrs=INDEX(pq,rs);
+                                    //no use of hf.TEI_MO since it's something I barely created in this function
+                                    TEI_MO(ijkl) += hf.C(p,i) * hf.C(q,j) * hf.C(r,k) * hf.C(s,l) * hf.TEI(pqrs);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int HartreeFock::MP2_calc(HartreeFock& hf, int elec_num)
+{
+    //do I have to wonder about it being float or double?
+    double Emp2 = 0.0;
+    int ndocc = elec_num/2;
+    //int nao = norb;  
+    int ia, ja, jb, ib, iajb, ibja;
+    //OK think about # of doubly occupied vs unocc/virtual orbitals(these come after)
+    //eps are the orbital energies I solved for as eigenvalues
+    for(int i=0; i < ndocc; i++) {
+        for(int a=ndocc; a<norb; a++) {
+            ia = INDEX(i,a);
+            for(int j=0; j<ndocc; j++) {
+                ja = INDEX(j,a);
+                for(int b=ndocc; b<norb; b++) {
+                    jb = INDEX(j,b);
+                    ib = INDEX(i,b);
+                    iajb = INDEX(ia, jb);
+                    ibja = INDEX(ib, ja);
+                    Emp2 += (hf.TEI_MO[iajb] * (2*hf.TEI_MO[iajb] - hf.TEI_MO[ibja]))/(hf.E_p(i) + hf.E_p(j) - hf.E_p(a) - hf.E_p(b));
+                    //eps is epsilon  which are orbital energies that were solved for using eigen solver
+                }
+            }
+        }
+    }
+    cout << "MP2 Energy: " << Emp2 << std::endl;
     return 0;
 }
 

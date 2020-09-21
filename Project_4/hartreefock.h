@@ -25,11 +25,14 @@ class HartreeFock
         Matrix core;    //My core Hamiltonian will be made up of the t and v (kinetic and potential)
         Matrix SOM;     //The Symmetric Orthogonal Overlap Matrix
         Vector TEI;     //Two electron repulsion integral
+        Vector TEI_MO;  //Two electron repulsion integral in the MO basis
         Vector ioff;
         Matrix D;       //Density Matrix
         Matrix F;       //New Fock matrix formed from Density matrix and tei
         Matrix F_p;     //Orthogonalized Fock matrix
         Matrix C;       //New calculated coefficient matrix
+        Matrix E_p;
+        //Vector E_p;     //The Molecular Orbital energies
         int iter;
         int iter_max;
         double SCF;
@@ -54,6 +57,8 @@ class HartreeFock
         int compute_SCF(HartreeFock& hf);
         int update_Fock(HartreeFock& hf);
 
+        int transform_AO_2_MO(HartreeFock& hf); //This function is to transform from AO to MO basis
+        int MP2_calc(HartreeFock& hf, int elec_num); //This fxn calculates MP2 energy
 
         HartreeFock(const char *filename);
         ~HartreeFock();
