@@ -17,7 +17,7 @@ using namespace std;
 int main()
 {
     Molecule mol("geom.dat", 0);
-    HartreeFock hf("s.dat");
+    HartreeFock hf("s.dat", mol.electron_count());
 
     //Read and print nuclear repulsion energy
     hf.enuc = hf.read_enuc("enuc.dat");
@@ -42,9 +42,6 @@ int main()
     //Compute the Initial SCF energy
     hf.compute_SCF(hf);
     hf.old_SCF = hf.SCF;
-
-    //printf("The initial SCF electronic energy is %12.12f Hartrees.\n", hf.SCF);
-    //printf("The total energy (sum of the SCF electronic energy and nuclear repulsion energy) is %12.12f Hartrees.\n", hf.tot_E);
 
     //Build the new Density matrix and iterate Step 7-9 until convergence is reached
     double tol = 1e-12;
@@ -82,18 +79,38 @@ int main()
         //printf("%04d %20.12f %20.12f %20.12f %20.12f \n", hf.iter, hf.SCF, hf.tot_E, delta_E, rms_D);
 
     }
-
-    hf.print_matrix("The molecular orbital (MO) coefficients in the non-orthogonal atomic orbital (AO) basis: \n", hf.C);
-    hf.print_vector("The molecular orbital energies (\u03B5): \n", hf.E_p);
+    cout << "HF SCF Energy = " << hf.tot_E << endl;
 
     //Transform the 2e- integrals into the MO basis
-    hf.transform_AO_2_MO(hf);
-    //hf.print_matrix("The two electron integrals in the MO basis (transformed from the AO basis): \n", hf.TEI_MO);
+    hf.smart_transform_AO_2_MO(hf);
 
     //Calculate the MP2 energy using the TEI in the MO basis
-    hf.MP2_calc(hf, mol.electron_count());
+    hf.smart_MP2_calc(hf, mol.electron_count());
+    cout << "MP2 Energy Correction = " << hf.Emp2 << endl;
     
-    //CCSD functions
+    cout << "Total Energy = " << hf.tot_E + hf.Emp2 << endl;
+
+    //Print out converged Fock matrix
+    hf.print_matrix("The converged Fock matrix in the AO basis:\n", hf.F);
+
+    //CCSD Functions
+    hf.transform_to_spin(hf);
+
+    hf.create_spinFock(hf, mol.electron_count());
+
+    cout << endl;
+
+    hf.build_cluster_amp(hf, mol.electron_count());
+
+    hf.build_tau(hf);
+
+    hf.ccF_intermediates(hf, mol.electron_count());
+
+    hf.ccW_intermediates(hf, mol.electron_count());
+
+    hf.update_t_ia(hf);
+    
+    hf.update_t_ijab(hf);
 
     return 0;
 }

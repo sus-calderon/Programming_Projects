@@ -19,6 +19,10 @@ class HartreeFock
         //Variables:
         double enuc;    //Nuclear repulsion energy
         int norb;       //Number of atomic orbitals in file (water has 7, 1s for each H, and 1s, 2s, and 3 2p for O)
+        int e_count;    //# of electrons in system grabbed from Molecule class
+        int nmo;
+        int no;
+        int nv;
         Matrix S;       //The overlap integral is a 7x7 integral, and so s[i][j]=1.00000 if i=j=1
         Matrix T;
         Matrix V;
@@ -39,6 +43,34 @@ class HartreeFock
         double tot_E;
         double old_SCF; //For my while loop, that tests for convergence
         Matrix old_D;
+        //Variables for Smart MP2 algorithm
+        Matrix tmp;
+        Matrix X;
+        Matrix Y;
+        Matrix final_;
+        double Emp2;
+
+        //Variables for CCSD
+        double ****spinTEI; //ptr to ptr to ptr to ptr (make it 4D) to int initial=0
+        double ****tau;
+        double ****tau_t;
+        Vector F_eval;
+        Matrix spinFock;
+        double spinEmp2;
+        //Eigen::MatrixXd F_ae;
+        //Eigen::MatrixXd F_mi;
+        //Eigen::MatrixXd F_me;
+        //Eigen::MatrixXd T1;
+        Matrix F_ae;
+        Matrix F_mi;
+        Matrix F_me;
+        Matrix T1;
+        double ****T2;
+        double ****W_mnij;
+        double ****W_abef;
+        double ****W_mbej;
+        Matrix D_ia;
+        double ****D_ijab;
 
         //Functions
         void print_matrix(string mat_string, Matrix matrix);      
@@ -58,9 +90,21 @@ class HartreeFock
         int update_Fock(HartreeFock& hf);
 
         int transform_AO_2_MO(HartreeFock& hf); //This function is to transform from AO to MO basis
+        int smart_transform_AO_2_MO(HartreeFock& hf); //N^5 smart algorithm
         int MP2_calc(HartreeFock& hf, int elec_num); //This fxn calculates MP2 energy
+        int smart_MP2_calc(HartreeFock& hf, int elec_num); //This fxn calculates MP2 energy
 
-        HartreeFock(const char *filename);
+        //CCSD Functions
+        void transform_to_spin(HartreeFock& hf); //Transform MO basis spatial into spin-MO orbital basis
+        Matrix create_spinFock(HartreeFock& hf, int elec_num); //Create Fock in spin-orbital basis
+        void build_cluster_amp(HartreeFock& hf, int elec_num);
+        void ccF_intermediates(HartreeFock& hf, int elec_num);
+        void build_tau(HartreeFock& hf);
+        void ccW_intermediates(HartreeFock& hf, int elec_num);
+        void update_t_ia(HartreeFock& hf);
+        void update_t_ijab(HartreeFock& hf);
+
+        HartreeFock(const char *filename, int e_c);
         ~HartreeFock();
 };
 
