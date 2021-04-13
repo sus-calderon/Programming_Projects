@@ -4,7 +4,8 @@ Eigen/
 .DS_Store
 Eigen_package_2018/
 ProgrammingProjects-master/
-Makefile    #I'll have to consider not ignoring this file in the future
+Makefile    
+#I'll have to consider not ignoring Makefile in the future
 myscf.c
 geom.dat
 *.dat
