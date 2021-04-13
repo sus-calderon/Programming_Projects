@@ -8,6 +8,7 @@ Makefile
 myscf.c
 geom.dat
 *.dat
+array.*
 
 # Ignores files from Project_1
 mol_analyser*
