@@ -4,11 +4,15 @@ Eigen/
 .DS_Store
 Eigen_package_2018/
 ProgrammingProjects-master/
-Makefile
+Makefile    #I'll have to consider not ignoring this file in the future
 myscf.c
 geom.dat
 *.dat
 array.*
+c++/
+eigen-master.tar.gz
+eigen-master/
+myscf
 
 # Ignores files from Project_1
 mol_analyser*
@@ -27,3 +31,17 @@ Project_4/molecule.cc
 Project_4/molecule.h
 MP2_CPU_time.xlsx
 ~$MP2_CPU_time.xlsx
+
+# Ignore files from Project_5
+Copy_Project5/
+Project_5/.hg_archival.txt
+Project_5/.hgeol
+Project_5/.hgignore
+Project_5/.hgtags
+Project_5/CCSD
+Project_5/Eigen1/
+Project_5/c++/
+Project_5/eigen-master/
+Project_5/scf.cc
+Project_5/scf_c++.tar.gz
+Project_5/unsupported/
