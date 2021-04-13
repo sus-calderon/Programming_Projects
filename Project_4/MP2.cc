@@ -1,6 +1,6 @@
 // <MP2.cc>
 // Written on August 13, 2019 by Susana Calderon
-// Main Program: The second-order Moller-Plesset perturbation (MP2) energy
+// Main Program: Moller-Plesset Energy Correction
 //
 
 #include <iostream>
