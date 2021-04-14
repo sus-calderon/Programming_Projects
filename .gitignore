@@ -4,7 +4,7 @@ Eigen/
 .DS_Store
 Eigen_package_2018/
 ProgrammingProjects-master/
-Makefile    
+#Makefile    
 #I'll have to consider not ignoring Makefile in the future
 myscf.c
 myscf*
@@ -15,6 +15,7 @@ c++/
 eigen-master.tar.gz
 eigen-master/
 myscf
+run*
 
 # Ignores files from Project_1
 mol_analyser*
