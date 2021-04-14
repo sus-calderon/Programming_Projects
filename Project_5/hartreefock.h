@@ -65,12 +65,16 @@ class HartreeFock
         Matrix F_mi;
         Matrix F_me;
         Matrix T1;
+        Matrix old_T1;
         double ****T2;
+        double ****old_T2;
         double ****W_mnij;
         double ****W_abef;
         double ****W_mbej;
         Matrix D_ia;
         double ****D_ijab;
+        double E_cc;
+        double old_E_cc;
 
         //Functions
         void print_matrix(string mat_string, Matrix matrix);      
@@ -103,6 +107,7 @@ class HartreeFock
         void ccW_intermediates(HartreeFock& hf, int elec_num);
         void update_t_ia(HartreeFock& hf);
         void update_t_ijab(HartreeFock& hf);
+        void cc_E(HartreeFock& hf);
 
         HartreeFock(const char *filename, int e_c);
         ~HartreeFock();

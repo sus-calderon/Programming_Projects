@@ -110,7 +110,52 @@ int main()
 
     hf.update_t_ia(hf);
     
+    //hf.print_matrix("Updated F_ae intermediates: \n", hf.F_ae); 
+
     hf.update_t_ijab(hf);
+
+    //Check CC_E convergence by comparing E and cluster amplitudes using RMS differences
+    tol = 1e-12;
+    hf.iter_max = 100;
+    hf.iter = 0;
+    delta_E = 1.0;
+    hf.old_E_cc = 0.0;
+    double rms = 0.0;
+
+    while((abs(delta_E) > tol || rms > tol) && hf.iter < hf.iter_max) {
+        hf.iter+=1;
+        double rms_T1 = 0.0;
+
+        //Calculte the CC energy
+        hf.cc_E(hf);
+        
+        //Test the CC_E for convergence
+        delta_E = hf.E_cc - hf.old_E_cc;
+        hf.old_E_cc = hf.E_cc;
+
+        //Test the root-mean-squared difference in amplitudes for convergence
+        for(int i=0; i<hf.T1.rows(); i++) {
+            for(int j=0; j<hf.T1.cols(); j++) {
+                rms_T1 += (hf.T1(i,j) - hf.old_T1(i,j))*(hf.T1(i,j) - hf.old_T1(i,j));
+            }
+        }
+        hf.old_T1 = hf.T1;
+
+        double rms_T2 = 0.0;
+        for(int i=0; i<hf.no; i++) {
+            for(int j=0; j<hf.no; j++) {
+                for(int a=0; a<hf.nv; a++) {
+                    for(int b=0; b<hf.nv; b++) {
+                        rms_T2 += (hf.T2[i][j][a][b] - hf.old_T2[i][j][a][b])*(hf.T2[i][j][a][b] - hf.old_T2[i][j][a][b]);
+                    }
+                }
+            }
+        }
+        rms = rms_T1 + rms_T2;
+        rms = sqrt(rms);    //Use this value to test for rms convergence
+    }
+
+    cout << "CC Energy = " << hf.E_cc << endl;
 
     return 0;
 }

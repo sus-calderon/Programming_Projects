@@ -104,6 +104,20 @@ HartreeFock::HartreeFock(const char *filename, int e_c)
         }
     }
 
+    old_T2 = new double***[nmo];
+    for(int i=0; i<nmo; i++) {
+        old_T2[i] = new double**[nmo];
+        for(int j=0; j<nmo; j++) {
+            old_T2[i][j] = new double*[nmo];
+            for(int a=0; a<nmo; a++) {
+                old_T2[i][j][a] = new double[nmo];
+                for(int b=0; b<nmo; b++) {
+                    old_T2[i][j][a][b] = 0.0;
+                }
+            }
+        }
+    }
+
     //create effective 2-particle excitation operator tau and tau_p
     tau = new double***[nmo];
     for(int i=0; i<nmo; i++) {
@@ -136,6 +150,9 @@ HartreeFock::HartreeFock(const char *filename, int e_c)
     T1.resize(nmo, nmo);
     T1.setZero();
     
+    old_T1.resize(nmo, nmo);
+    old_T1.setZero();
+
     D_ia.resize(nmo, nmo);
     D_ia.setZero();
     
@@ -905,7 +922,6 @@ void HartreeFock::update_t_ia(HartreeFock& hf)
             for(int m=0; m<no; m++) {
                     sum2 += T1(m,a)*F_mi(m,i);
             }
-             
             for(int e=0; e<nv; e++) {
                 for(int m=0; m<no; m++) {
                     sum3 += T2[i][m][a][e]*F_me(m,e);
@@ -977,7 +993,7 @@ void HartreeFock::update_t_ijab(HartreeFock& hf)
                             sum4 -= T2[j][m][a][b]*(T1(i,e)*F_me(m,e));
                         }
                     }
-                    
+
                     for(int m=0; m<no; m++) {
                         for(int n=0; n<no; n++) {
                             for(int e=0; e<nv; e++) {
@@ -1035,33 +1051,31 @@ void HartreeFock::update_t_ijab(HartreeFock& hf)
             }
         }
     }
-
     return;
 }
 
 //Calculate CC Energy to check for convergence
-//void HartreeFock::cc_E_convergence()
-//{
-//    double e_cc = 0.0;
-//    double sum1 = 0.0;
-//    double sum2 = 0.0;
-//    double sum3 = 0.0;
-//    for(int i=0; i<no; i++) {
-//        for(int a=0; a<nv; a++) {
-//            sum1 += hf.spinFock(i,a)*T1(i,a);           
-//            for(int j=0; j<no; j++) {
-//                for(int b=0; b<nv; b++) {
-//                    sum2 += hf.spinTEI[i][j][a][b] * T2(i,j,a,b);
-//                    sum3 += hf,spinTEI[i][j][a][b]*T1(i,a)*T(j,b);
-//                }
-//            }
-//            e_cc += sum1;
-//        }
-//    }
-//
-//
-//    return;
-//}
+void HartreeFock::cc_E(HartreeFock& hf)
+{
+    E_cc = 0.0;
+    double sum1 = 0.0;
+    double sum2 = 0.0;
+    double sum3 = 0.0;
+    for(int i=0; i<no; i++) {
+        for(int a=0; a<nv; a++) {
+            sum1 += hf.spinFock(i,a)*T1(i,a);           
+            for(int j=0; j<no; j++) {
+                for(int b=0; b<nv; b++) {
+                    sum2 += hf.spinTEI[i][j][a][b]*T2[i][j][a][b];
+                    sum3 += hf.spinTEI[i][j][a][b]*T1(i,a)*T1(j,b);
+                }
+            }
+            E_cc += sum1 + 0.25*sum2 + 0.5*sum3;
+        }
+    }
+
+    return;
+}
 
 //Delete allocated and used memory
 HartreeFock::~HartreeFock()
@@ -1154,6 +1168,17 @@ HartreeFock::~HartreeFock()
         delete[] T2[i];
     }
     delete[] T2;
+
+    for(int i=0; i<nmo; i++) {
+        for(int j=0; j<nmo; j++) {
+            for(int a=0; a<nmo; a++) {
+                delete[] old_T2[i][j][a];
+            }
+            delete[] old_T2[i][j];
+        }
+        delete[] old_T2[i];
+    }
+    delete[] old_T2;
 
     for(int i=0; i<nmo; i++) {
         for(int j=0; j<nmo; j++) {
